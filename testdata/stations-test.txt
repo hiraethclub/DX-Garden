@@ -1,0 +1,10 @@
+# DX Garden test file: 4 good lines, 4 broken ones.
+Radio Paradise | http://stream.radioparadise.com/mp3-128 | United States | Paradise | 39.7596 | -121.6219 | Eclectic | Listener supported
+Radio Paradise (HTTPS) | https://stream.radioparadise.com/mp3-128 | united states | PARADISE | 39.76 | -121.62 | Eclectic, Rock
+KEXP | https://kexp-mp3-128.streamguys1.com/kexp128.mp3 | United States | Seattle | 47.6062 | -122.3321 | Indie, Alternative
+Test: Zürich spelling | http://stream.radioparadise.com/mp3-128?test=zurich | Schweiz | Zürich | 47,3769 | 8,5417 | Eclectic
+# The lines below are broken on purpose.
+Broken: too few fields | http://example.invalid/ | Nowhere
+Broken: bad latitude | http://example.invalid/a | X | Y | north | 1
+Broken: not a URL | example.invalid/b | X | Y | 1 | 1
+Radio Paradise duplicate | http://stream.radioparadise.com/mp3-128 | United States | Paradise | 39.7596 | -121.6219
