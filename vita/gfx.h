@@ -80,6 +80,34 @@ typedef struct {
  * Returns 0, or -1 (logged). */
 int gfx_texture_load_png(gfx_texture *t, const char *path);
 void gfx_texture_free(gfx_texture *t);
+/* The two halves of gfx_texture_load_png, so decoding can run on another
+ * thread (it needs no GPU) and only the upload on the main one. The
+ * decoded buffer is malloc'd RGB565; the caller frees it. */
+void *gfx_png_decode_565(const char *path, int *w, int *h);
+int gfx_texture_from_565(gfx_texture *t, const void *px, int w, int h);
+/*
+ * Static geometry kept on the GPU, drawn through a 4x4 matrix (column
+ * major, as glLoadMatrixf) that maps model space straight to screen
+ * pixels, with z as depth (larger z is nearer, kept within -1..1).
+ * Depth testing is on only inside these calls, so 2D drawing is unaffected.
+ */
+typedef struct {
+    unsigned vbo, ibo;
+    int n_verts, n_index;
+} gfx_buffer;
+
+/* Triangles: vertices are float x, y, z, u, v; 16-bit indices. */
+int gfx_buffer_tris(gfx_buffer *b, const float *xyzuv, int n_verts, const unsigned short *idx,
+                    int n_index);
+/* Lines: vertices are float x, y, z, in pairs. */
+int gfx_buffer_lines(gfx_buffer *b, const float *xyz, int n_verts);
+void gfx_buffer_free(gfx_buffer *b);
+void gfx_draw_tris(const gfx_buffer *b, const gfx_texture *t, const float m[16]);
+/* Draws ranges of a line buffer: begin, any number of ranges, end. */
+void gfx_lines_begin(const gfx_buffer *b, const float m[16], unsigned col);
+void gfx_lines_range(int first, int count);
+void gfx_lines_end(void);
+
 /* Space in the frame's batch for n vertices (whole triangles, n <= 3072)
  * drawn with texture t; the caller fills them in straight away. */
 gfx_vertex *gfx_tri_alloc(const gfx_texture *t, int n);

@@ -15,6 +15,7 @@
 #include "data.h"
 #include "fs.h"
 #include "gfx.h"
+#include "globe_view.h"
 #include "ime.h"
 #include "log.h"
 #include "player.h"
@@ -107,6 +108,7 @@ int main(void)
         scePowerGetBusClockFrequency(), scePowerGetGpuClockFrequency());
 
     sceCtrlSetSamplingMode(SCE_CTRL_MODE_ANALOG_WIDE);
+    globe_view_preload();
     switch (gfx_init()) {
     case GFX_OK:
         break;

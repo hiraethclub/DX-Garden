@@ -27,7 +27,11 @@ typedef struct {
     float tx[2], ty[2];
 } globe_input;
 
-/* Loads the map texture. Returns 0, or -1 if the globe can't be shown. */
+/* Starts decoding the map and line files on another thread. Call before
+ * gfx_init(), so the work overlaps vitaGL's start-up. */
+void globe_view_preload(void);
+/* Waits for the preload, then puts the map, sphere and lines on the GPU.
+ * Returns 0, or -1 if the globe can't be shown. */
 int globe_view_init(void);
 int globe_view_ready(void);
 void globe_view_shutdown(void);

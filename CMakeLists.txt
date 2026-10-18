@@ -90,6 +90,7 @@ if(VITA)
         FILE assets/fonts/NotoSans-Bold.ttf fonts/NotoSans-Bold.ttf
         FILE assets/fonts/OFL.txt fonts/OFL.txt
         FILE assets/map/world.png map/world.png
+        FILE assets/map/lines.bin map/lines.bin
     )
 else()
     add_executable(dxgarden_test

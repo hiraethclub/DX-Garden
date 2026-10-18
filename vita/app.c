@@ -837,8 +837,11 @@ static void step_station(int dir)
         return;
     p = &A.d->lib.places[pl];
     n = p->n_stations;
-    if (n == 0)
+    if (n <= 1) {
+        /* 00.07 restarted the only station here on every step. */
+        toast("%s has only one station", p->name);
         return;
+    }
     i = playing_index_in(pl);
     i = i < 0 ? (dir > 0 ? 0 : n - 1) : (i + dir + n) % n;
     globe_view_focus(&A.d->lib, pl, 1);

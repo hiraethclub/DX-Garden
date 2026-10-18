@@ -415,7 +415,7 @@ void gfx_begin(void)
         atlas_resets++;
         atlas_clear();
     }
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glBindTexture(GL_TEXTURE_2D, atlas_tex);
     batch_tex = atlas_tex;
 }
@@ -530,20 +530,18 @@ void gfx_arc(float cx, float cy, float r0, float r1, float frac, unsigned col)
 
 /* ---------- textures ---------- */
 
-int gfx_texture_load_png(gfx_texture *t, const char *path)
+void *gfx_png_decode_565(const char *path, int *w, int *h)
 {
     png_image img;
     unsigned char *px;
     uint16_t *out;
     size_t i, n;
-    GLenum err;
 
-    memset(t, 0, sizeof(*t));
     memset(&img, 0, sizeof(img));
     img.version = PNG_IMAGE_VERSION;
     if (!png_image_begin_read_from_file(&img, path)) {
         LOG("gfx: %s: %s", path, img.message);
-        return -1;
+        return NULL;
     }
     img.format = PNG_FORMAT_RGB;
     n = (size_t)img.width * img.height;
@@ -551,27 +549,33 @@ int gfx_texture_load_png(gfx_texture *t, const char *path)
     if (!px) {
         LOG("gfx: %s: out of memory (%ux%u)", path, img.width, img.height);
         png_image_free(&img);
-        return -1;
+        return NULL;
     }
     if (!png_image_finish_read(&img, NULL, px, 0, NULL)) {
         LOG("gfx: %s: %s", path, img.message);
         free(px);
-        return -1;
+        return NULL;
     }
     /* RGB888 to RGB565 in place: each write lands behind the next read. */
     out = (uint16_t *)px;
     for (i = 0; i < n; i++) {
         const unsigned char *p = px + i * 3;
-        uint16_t v = (uint16_t)(((p[0] >> 3) << 11) | ((p[1] >> 2) << 5) | (p[2] >> 3));
-        out[i] = v;
+        out[i] = (uint16_t)(((p[0] >> 3) << 11) | ((p[1] >> 2) << 5) | (p[2] >> 3));
     }
+    *w = (int)img.width;
+    *h = (int)img.height;
+    return px;
+}
 
+int gfx_texture_from_565(gfx_texture *t, const void *px, int w, int h)
+{
+    GLenum err;
+
+    memset(t, 0, sizeof(*t));
     flush();
     glGenTextures(1, &t->id);
     glBindTexture(GL_TEXTURE_2D, t->id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)img.width, (GLsizei)img.height, 0, GL_RGB,
-                 GL_UNSIGNED_SHORT_5_6_5, px);
-    free(px);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, px);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -584,13 +588,26 @@ int gfx_texture_load_png(gfx_texture *t, const char *path)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         t->mipmapped = 1;
     } else {
-        LOG("gfx: %s: no mipmaps (GL error 0x%X), using plain linear filtering", path, err);
+        LOG("gfx: no mipmaps (GL error 0x%X), using plain linear filtering", err);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     }
     glBindTexture(GL_TEXTURE_2D, batch_tex);
-    t->w = (int)img.width;
-    t->h = (int)img.height;
+    t->w = w;
+    t->h = h;
     return 0;
+}
+
+int gfx_texture_load_png(gfx_texture *t, const char *path)
+{
+    int w, h, rc;
+    void *px = gfx_png_decode_565(path, &w, &h);
+
+    memset(t, 0, sizeof(*t));
+    if (!px)
+        return -1;
+    rc = gfx_texture_from_565(t, px, w, h);
+    free(px);
+    return rc;
 }
 
 void gfx_texture_free(gfx_texture *t)
@@ -600,6 +617,109 @@ void gfx_texture_free(gfx_texture *t)
         glDeleteTextures(1, &t->id);
     }
     memset(t, 0, sizeof(*t));
+}
+
+/* ---------- static GPU geometry ---------- */
+
+int gfx_buffer_tris(gfx_buffer *b, const float *xyzuv, int n_verts, const unsigned short *idx,
+                    int n_index)
+{
+    memset(b, 0, sizeof(*b));
+    flush();
+    glGenBuffers(1, &b->vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, b->vbo);
+    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)n_verts * 5 * sizeof(float), xyzuv, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glGenBuffers(1, &b->ibo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, b->ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)n_index * sizeof(unsigned short), idx,
+                 GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    b->n_verts = n_verts;
+    b->n_index = n_index;
+    return 0;
+}
+
+int gfx_buffer_lines(gfx_buffer *b, const float *xyz, int n_verts)
+{
+    memset(b, 0, sizeof(*b));
+    flush();
+    glGenBuffers(1, &b->vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, b->vbo);
+    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)n_verts * 3 * sizeof(float), xyz, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    b->n_verts = n_verts;
+    return 0;
+}
+
+void gfx_buffer_free(gfx_buffer *b)
+{
+    flush();
+    if (b->vbo)
+        glDeleteBuffers(1, &b->vbo);
+    if (b->ibo)
+        glDeleteBuffers(1, &b->ibo);
+    memset(b, 0, sizeof(*b));
+}
+
+static void begin_3d(const float m[16])
+{
+    flush();
+    glMatrixMode(GL_MODELVIEW);
+    glLoadMatrixf(m);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    glDisableClientState(GL_COLOR_ARRAY);
+}
+
+static void end_3d(void)
+{
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glDisable(GL_DEPTH_TEST);
+    glLoadIdentity();
+    glEnable(GL_TEXTURE_2D);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glColor4f(1, 1, 1, 1);
+    glBindTexture(GL_TEXTURE_2D, atlas_tex);
+    batch_tex = atlas_tex;
+}
+
+void gfx_draw_tris(const gfx_buffer *b, const gfx_texture *t, const float m[16])
+{
+    if (!b->vbo || !t->id)
+        return;
+    begin_3d(m);
+    glColor4f(1, 1, 1, 1);
+    glBindTexture(GL_TEXTURE_2D, t->id);
+    glBindBuffer(GL_ARRAY_BUFFER, b->vbo);
+    glVertexPointer(3, GL_FLOAT, 5 * sizeof(float), (const void *)0);
+    glTexCoordPointer(2, GL_FLOAT, 5 * sizeof(float), (const void *)(3 * sizeof(float)));
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, b->ibo);
+    glDrawElements(GL_TRIANGLES, b->n_index, GL_UNSIGNED_SHORT, (const void *)0);
+    end_3d();
+}
+
+void gfx_lines_begin(const gfx_buffer *b, const float m[16], unsigned col)
+{
+    begin_3d(m);
+    glDisable(GL_TEXTURE_2D);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    glColor4ub(col & 0xFF, (col >> 8) & 0xFF, (col >> 16) & 0xFF, col >> 24);
+    glBindBuffer(GL_ARRAY_BUFFER, b->vbo);
+    glVertexPointer(3, GL_FLOAT, 3 * sizeof(float), (const void *)0);
+}
+
+void gfx_lines_range(int first, int count)
+{
+    if (count > 0)
+        glDrawArrays(GL_LINES, first, count);
+}
+
+void gfx_lines_end(void)
+{
+    end_3d();
 }
 
 gfx_vertex *gfx_tri_alloc(const gfx_texture *t, int n)

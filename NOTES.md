@@ -440,3 +440,70 @@ details move to the START menu only.
     says so and the map may shimmer when zoomed out.
   - How the stick speed and touch-drag feel.
   - How long the map takes to load.
+
+## Build 00.07 on hardware
+
+- **Tester:**
+  - No gaps or seams, and no problem at the date line.
+  - Too sensitive when fully zoomed out.
+  - Would like a middling zoom at start-up.
+  - Coastlines blurry at full zoom.
+- **Log:**
+  - The map loaded in 2.4 s (mipmapped), on top of 3.4 s for vitaGL.
+  - Steady 60 fps, but drawing took 9-15 ms of CPU per frame (1 ms in the
+    list), because the mesh was projected on the CPU every frame.
+  - Spikes of 90-130 ms around station changes.
+  - Brussels (one station) restarted six times in ten seconds: stepping
+    "to the next station" wrapped round to the same one.
+
+## Build 00.08: globe on the GPU, sharp coastlines, fixes
+
+- **Globe on the GPU:**
+  - The sphere is a static vertex/index buffer. Each frame only a 4x4
+    matrix changes (orthographic, unit sphere to screen pixels). Its
+    output matches `core/globe.c`'s projection to 1e-11 px, checked
+    numerically.
+  - The far side is hidden with the depth test, not by skipping cells, so
+    the edge is exact.
+  - The edge darkening is now a 2D radial overlay with the same curve as
+    before.
+- **Coastlines and borders as lines:**
+  - `tools/make_map.py` also writes `assets/map/lines.bin`: Natural Earth
+    1:50m coastlines, lake shores and land borders, about 98,000
+    segments, 790 KB.
+  - Stored in 10-degree tiles. Only tiles near the view are drawn, with
+    neighbouring tiles merged into one draw call.
+  - Drawn as GL lines, lifted 0.08% above the surface. They fade in
+    between radius 650 and 1250, so they stay sharp at full zoom where the
+    texture is soft.
+- **Start-up:**
+  - The map PNG and lines are decoded on a separate thread, started
+    before vitaGL, so the 2.4 s overlaps vitaGL's 3.4 s.
+  - The log shows decode time, how long the main thread waited, and the
+    upload time.
+  - The app opens at radius 550 (about a continent across).
+- **Stick speed** scales with zoom (35% at full zoom-out). Finger drag
+  stays 1:1.
+- **Logging** goes through a 32 KB buffer and a writer thread, so the main
+  loop no longer waits on the memory card. If the buffer ever fills,
+  dropped lines are counted in the log.
+- **Bug fix:** stepping through stations in a one-station place shows
+  "has only one station" instead of restarting it.
+- **Uncertain on hardware:**
+  - vitaGL's depth convention. If the far side of the globe shows through
+    mirrored, the depth sign is the wrong way round.
+  - Line throughput. With about 60,000 lines in view just past the fade-in
+    zoom, check the `frame:` lines there.
+
+## Build 00.09: no drift, auto-select
+
+- **Tester on 00.08:** the globe kept moving after the left stick was
+  released, which made it hard to stop on a dot. They asked for no drift,
+  plus auto-selection of the nearest dot when the crosshair is close to
+  one.
+- **No glide** after the stick or d-pad is released. Only a finger fling
+  on the touchscreen still coasts.
+- **Auto-select:** 0.05 s after input stops, the nearest dot within 48 px
+  of the crosshair is pulled onto it. This settles in about 0.25 s. The
+  dwell timer still counts from when the dot is within 26 px, so it plays
+  about 0.8 s after landing.
