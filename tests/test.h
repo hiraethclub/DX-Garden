@@ -18,5 +18,6 @@ extern int checks;
     } while (0)
 
 void run_library_tests(void);
+void run_globe_tests(void);
 
 #endif

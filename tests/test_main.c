@@ -181,6 +181,7 @@ int main(void)
     test_sb_eof();
     test_sb_prebuffer_clamp();
     run_library_tests();
+    run_globe_tests();
 
     printf("%d checks, %d failures\n", checks, failures);
     return failures ? 1 : 0;

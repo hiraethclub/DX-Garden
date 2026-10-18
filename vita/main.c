@@ -106,9 +106,28 @@ int main(void)
     LOG("clocks: ARM %d MHz, bus %d MHz, GPU %d MHz", scePowerGetArmClockFrequency(),
         scePowerGetBusClockFrequency(), scePowerGetGpuClockFrequency());
 
-    sceCtrlSetSamplingMode(SCE_CTRL_MODE_DIGITAL);
-    if (gfx_init() < 0) {
-        LOG("gfx: init failed");
+    sceCtrlSetSamplingMode(SCE_CTRL_MODE_ANALOG_WIDE);
+    switch (gfx_init()) {
+    case GFX_OK:
+        break;
+    case GFX_ERR_NO_SHADER_COMPILER:
+        gfx_fallback_message(
+            "Shader compiler missing",
+            "DX Garden needs libshacccg.suprx in ur0:data/ to draw its graphics, and "
+            "it was not found. Extract it with the ShaRKBR33D homebrew, then start "
+            "DX Garden again.");
+        log_close();
+        sceKernelExitProcess(0);
+        return 0;
+    case GFX_ERR_FONTS:
+        gfx_fallback_message("Fonts missing",
+                             "The Noto Sans fonts are missing from the app. Reinstall the VPK.");
+        log_close();
+        sceKernelExitProcess(0);
+        return 0;
+    default:
+        /* vitaGL is running, so neither screen helper is safe: just quit. */
+        LOG("gfx: setup failed after vitaGL started, quitting");
         log_close();
         sceKernelExitProcess(0);
         return 0;
@@ -142,7 +161,7 @@ int main(void)
 
         sceCtrlPeekBufferPositive(0, &pad, 1);
         player_get_status(&st);
-        if (app_update(pad.buttons, &st))
+        if (app_update(&pad, &st))
             break;
 
         player_update();
@@ -178,6 +197,14 @@ int main(void)
             }
             stats_bytes = st.bytes_in;
             stats_time = now;
+            {
+                gfx_stats g;
+                gfx_take_stats(&g);
+                LOG("frame: %u frames, avg %.1f ms, worst %.1f ms, draw CPU %.1f ms, "
+                    "glyph atlas %u%% (%u resets)",
+                    g.frames, (double)g.avg_ms, (double)g.worst_ms, (double)g.draw_ms,
+                    g.atlas_pct, g.atlas_resets);
+            }
         }
 
         /* Keep the Vita from suspending while a stream is open. */

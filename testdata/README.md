@@ -22,3 +22,12 @@ lines. They are not a station list and are not shipped in the VPK.
   and "kexp-mp3-128.streamguys1.com" (a PLS entry with no title, so it is
   named after its host). The KEXP entry in test.m3u is hidden because
   stations.txt already has that URL.
+
+## Globe test (from build 00.07)
+
+- `stations-globe-test.txt`: copy to `ux0:data/dxgarden/stations.txt`
+  (rename it). It places the same three test streams in 14 cities, using
+  `?test=` tags to keep each URL unique. Expected: 17 stations in 14 places
+  and 0 skipped. Berlin has 3 stations, for testing the station arrows.
+  Amsterdam and Brussels are close together. Auckland, Suva and Honolulu
+  sit near the date line, and Longyearbyen is far north.

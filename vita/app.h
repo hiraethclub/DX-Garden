@@ -3,6 +3,8 @@
 #ifndef DXG_APP_H
 #define DXG_APP_H
 
+#include <psp2/ctrl.h>
+
 #include "data.h"
 #include "player.h"
 
@@ -15,9 +17,9 @@ typedef struct {
 
 void app_init(app_data *d);
 void app_shutdown(void);
-/* Handles one frame of input (`buttons` is the held SceCtrl mask).
+/* Handles one frame of input (buttons, sticks and front touch).
  * Returns 0 to keep running, 1 to quit. */
-int app_update(unsigned buttons, const player_status *st);
+int app_update(const SceCtrlData *pad, const player_status *st);
 void app_draw(const player_status *st, const sys_status *sys);
 
 #endif

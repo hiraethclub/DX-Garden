@@ -7,8 +7,10 @@
 
 #include <psp2/ctrl.h>
 #include <psp2/kernel/processmgr.h>
+#include <psp2/touch.h>
 
 #include "gfx.h"
+#include "globe_view.h"
 #include "ime.h"
 #include "log.h"
 #include "playlist.h"
@@ -28,6 +30,17 @@
 #define PANEL_H 68
 #define PANEL_Y (SCREEN_H - PANEL_H)
 #define VISIBLE_ROWS ((PANEL_Y - LIST_Y) / ROW_H)
+
+#define GPANEL_Y (SCREEN_H - GLOBE_PANEL_H)
+/* Station arrows in the globe panel, also touch targets. */
+#define ARROW_W 52
+#define ARROW_H 44
+#define ARROW_L_X (SCREEN_W - MARGIN - 170)
+#define ARROW_R_X (SCREEN_W - MARGIN - ARROW_W)
+#define ARROW_Y (GPANEL_Y + 8)
+
+#define STICK_DEAD 0.18f
+#define RECENT_SAVE_US (5 * 1000 * 1000)
 
 #define TOAST_US (4 * 1000 * 1000)
 #define REPEAT_DELAY_US 400000
@@ -90,8 +103,11 @@ typedef enum {
 #define MAX_DEPTH 4
 #define MAX_MENU 8
 
+typedef enum { MODE_LIST, MODE_GLOBE } app_mode;
+
 static struct {
     app_data *d;
+    app_mode mode;
     tab_id tab;
     view stack[MAX_DEPTH];
     int depth;
@@ -118,6 +134,17 @@ static struct {
     char np_name[256];
     char np_place[256];
     char np_url[512];
+    int np_place_idx; /* place of the playing station, or -1 */
+
+    /* recent.txt is saved a few seconds after the last change, so turning
+     * the globe across several places doesn't write to the card each time. */
+    int recent_dirty;
+    SceUInt64 recent_due;
+
+    SceUInt64 last_frame;
+    float prev_rx;
+    int touch_seen[256]; /* front-touch ids already handled as panel taps */
+    int touch_globe[256]; /* ids that started on the globe */
 
     size_t prebuffer;
     int prebuffer_dirty;
@@ -310,13 +337,31 @@ static void play_station(int si)
     snprintf(A.np_name, sizeof(A.np_name), "%s", s->name);
     snprintf(A.np_place, sizeof(A.np_place), "%s", where);
     snprintf(A.np_url, sizeof(A.np_url), "%s", s->url);
+    A.np_place_idx = s->place;
     LOG("play: %s (%s) %s", s->name, where, s->url);
 
     userlist_push_front(&A.d->recent, s->url, RECENT_MAX);
-    if (data_save_recent(A.d) != 0)
-        LOG("recent.txt: save failed");
+    A.recent_dirty = 1;
+    A.recent_due = sceKernelGetProcessTimeWide() + RECENT_SAVE_US;
     if (A.tab == TAB_RECENT)
         refresh_root_keep_cursor();
+}
+
+static void save_recent_if_due(int force)
+{
+    if (!A.recent_dirty || (!force && sceKernelGetProcessTimeWide() < A.recent_due))
+        return;
+    A.recent_dirty = 0;
+    if (data_save_recent(A.d) != 0)
+        LOG("recent.txt: save failed");
+}
+
+/* After any library rebuild: place indices have changed. */
+static void library_changed(void)
+{
+    int si = A.np_url[0] ? library_find_url(&A.d->lib, A.np_url) : -1;
+    A.np_place_idx = si >= 0 ? station_at(si)->place : -1;
+    globe_view_library_changed();
 }
 
 static void toggle_favourite(int si)
@@ -336,6 +381,7 @@ static void toggle_favourite(int si)
 static void reload_library(void)
 {
     data_reload_library(A.d);
+    library_changed();
     build_root();
 }
 
@@ -379,6 +425,7 @@ static void finish_placing(const char *city_in, const char *country_in, double l
         return;
     }
     A.picking = 0;
+    library_changed();
     build_root();
     toast("Saved %s in %s%s%s", name, city, country[0] ? ", " : "", country);
 }
@@ -387,7 +434,7 @@ static void open_menu(void)
 {
     view *v = cur();
     A.menu_n = 0;
-    if (!A.picking && v->kind == ROW_STATION && v->n > 0 &&
+    if (A.mode == MODE_LIST && !A.picking && v->kind == ROW_STATION && v->n > 0 &&
         station_at(v->items[v->sel])->place < 0)
         A.menu[A.menu_n++] = MENU_PLACE;
     A.menu[A.menu_n++] = MENU_ADD_URL;
@@ -469,6 +516,7 @@ static void flow_result(const char *text)
             message("Could not save to import/added-by-url.m3u. Is the memory card full?");
             break;
         }
+        library_changed();
         build_root();
         start_placing(A.new_url);
         break;
@@ -515,6 +563,8 @@ static void flow_result(const char *text)
 }
 
 /* ---- input ------------------------------------------------------------- */
+
+static void show_globe(void);
 
 static unsigned repeat_mask(unsigned held, unsigned pressed)
 {
@@ -603,7 +653,7 @@ static void browse_input(unsigned p)
     if (p & SCE_CTRL_START)
         open_menu();
     if ((p & SCE_CTRL_SELECT) && !A.picking)
-        A.ov = OV_DETAILS;
+        show_globe();
 }
 
 static int menu_input(unsigned p)
@@ -726,12 +776,229 @@ static void report_input(unsigned p)
         A.ov = OV_NONE;
 }
 
-int app_update(unsigned buttons, const player_status *st)
+/* ---- globe ------------------------------------------------------------- */
+
+static double now_s(void)
 {
+    return (double)sceKernelGetProcessTimeWide() / 1e6;
+}
+
+/* Index of the playing station within a place, or -1. */
+static int playing_index_in(int pl)
+{
+    const place *p;
+    int i;
+
+    if (pl < 0 || pl >= A.d->lib.n_places || !A.np_url[0])
+        return -1;
+    p = &A.d->lib.places[pl];
+    for (i = 0; i < p->n_stations; i++)
+        if (strcmp(station_at(p->stations[i])->url, A.np_url) == 0)
+            return i;
+    return -1;
+}
+
+static int player_busy(const player_status *st)
+{
+    return st->state != PLAYER_IDLE && st->state != PLAYER_ERROR;
+}
+
+/* Starts a place: keeps its station if one is already playing, otherwise
+ * plays its first favourite, otherwise its first station. */
+static void tune_place(int pl, const player_status *st)
+{
+    const place *p;
+    int i, pick = 0;
+
+    if (pl < 0 || pl >= A.d->lib.n_places)
+        return;
+    p = &A.d->lib.places[pl];
+    if (p->n_stations == 0)
+        return;
+    if (playing_index_in(pl) >= 0 && player_busy(st))
+        return;
+    for (i = 0; i < p->n_stations; i++)
+        if (userlist_index(&A.d->favs, station_at(p->stations[i])->url) >= 0) {
+            pick = i;
+            break;
+        }
+    play_station(p->stations[pick]);
+}
+
+/* Next/previous station in the place being played (or under the
+ * crosshair). */
+static void step_station(int dir)
+{
+    int pl = A.np_place_idx >= 0 ? A.np_place_idx : globe_view_candidate();
+    const place *p;
+    int i, n;
+
+    if (pl < 0 || pl >= A.d->lib.n_places)
+        return;
+    p = &A.d->lib.places[pl];
+    n = p->n_stations;
+    if (n == 0)
+        return;
+    i = playing_index_in(pl);
+    i = i < 0 ? (dir > 0 ? 0 : n - 1) : (i + dir + n) % n;
+    globe_view_focus(&A.d->lib, pl, 1);
+    play_station(p->stations[i]);
+}
+
+/* Shows a place's stations in the list, under the Cities tab. */
+static void open_place_in_list(int pl)
+{
+    library *lib = &A.d->lib;
+    char crumb[160];
+    int i, sel;
+
+    A.mode = MODE_LIST;
+    set_tab(TAB_CITIES);
+    for (i = 0; i < lib->n_places; i++)
+        if (lib->places_by_name[i] == pl) {
+            cur()->sel = i;
+            cur()->top = i > VISIBLE_ROWS / 2 ? i - VISIBLE_ROWS / 2 : 0;
+            break;
+        }
+    place_label(&lib->places[pl], crumb, sizeof(crumb));
+    push_view(ROW_STATION, lib->places[pl].stations, lib->places[pl].n_stations, crumb);
+    sel = playing_index_in(pl);
+    if (sel > 0) {
+        cur()->sel = sel;
+        cur()->top = sel >= VISIBLE_ROWS ? sel - VISIBLE_ROWS + 1 : 0;
+    }
+}
+
+static void show_globe(void)
+{
+    if (!globe_view_ready()) {
+        toast("The globe is unavailable: its map file is missing. Reinstall the VPK.");
+        return;
+    }
+    if (A.d->lib.n_places == 0) {
+        toast("No places yet. Add stations with coordinates to stations.txt.");
+        return;
+    }
+    A.mode = MODE_GLOBE;
+    if (A.np_place_idx >= 0)
+        globe_view_focus(&A.d->lib, A.np_place_idx, 1);
+}
+
+static float stick(unsigned char raw)
+{
+    float v = ((float)raw - 128.0f) / 127.0f;
+    if (v > 1)
+        v = 1;
+    if (v < -1)
+        v = -1;
+    if (v > -STICK_DEAD && v < STICK_DEAD)
+        return 0;
+    return (v - (v > 0 ? STICK_DEAD : -STICK_DEAD)) / (1.0f - STICK_DEAD);
+}
+
+static int in_rect(float x, float y, int rx, int ry, int rw, int rh)
+{
+    return x >= rx && x < rx + rw && y >= ry && y < ry + rh;
+}
+
+/* Reads the front touch panel only (the rear one is never used). Touches
+ * that start on the globe go to the globe; taps on the panel arrows step
+ * through stations. */
+static void read_touch(globe_input *in)
+{
+    SceTouchData t;
+    int i, live[256];
+
+    memset(live, 0, sizeof(live));
+    in->touches = 0;
+    if (sceTouchPeek(SCE_TOUCH_PORT_FRONT, &t, 1) < 0)
+        return;
+    for (i = 0; i < (int)t.reportNum && i < SCE_TOUCH_MAX_REPORT; i++) {
+        int id = t.report[i].id;
+        float x = t.report[i].x / 2.0f, y = t.report[i].y / 2.0f; /* 1920x1088 */
+        live[id] = 1;
+        if (!A.touch_seen[id]) {
+            A.touch_seen[id] = 1;
+            A.touch_globe[id] = y < GPANEL_Y;
+            if (in_rect(x, y, ARROW_L_X, ARROW_Y, ARROW_W, ARROW_H))
+                step_station(-1);
+            else if (in_rect(x, y, ARROW_R_X, ARROW_Y, ARROW_W, ARROW_H))
+                step_station(1);
+        }
+        if (A.touch_globe[id] && in->touches < 2) {
+            in->touch_id[in->touches] = id;
+            in->tx[in->touches] = x;
+            in->ty[in->touches] = y;
+            in->touches++;
+        }
+    }
+    for (i = 0; i < 256; i++)
+        if (!live[i])
+            A.touch_seen[i] = A.touch_globe[i] = 0;
+}
+
+static void globe_input_frame(const SceCtrlData *pad, unsigned pressed, const player_status *st)
+{
+    globe_input in;
+    SceUInt64 t = sceKernelGetProcessTimeWide();
+    double dt = A.last_frame ? (double)(t - A.last_frame) / 1e6 : 0;
+    float rx = stick(pad->rx);
+    int pl;
+
+    if (dt > 0.1)
+        dt = 0.1;
+    memset(&in, 0, sizeof(in));
+    in.lx = stick(pad->lx);
+    in.ly = stick(pad->ly);
+    in.up = (pad->buttons & SCE_CTRL_UP) != 0;
+    in.down = (pad->buttons & SCE_CTRL_DOWN) != 0;
+    in.left = (pad->buttons & SCE_CTRL_LEFT) != 0;
+    in.right = (pad->buttons & SCE_CTRL_RIGHT) != 0;
+    in.zoom_in = (pad->buttons & SCE_CTRL_RTRIGGER) != 0;
+    in.zoom_out = (pad->buttons & SCE_CTRL_LTRIGGER) != 0;
+    read_touch(&in);
+
+    /* Right stick: one flick, one station. */
+    if (rx > 0.6f && A.prev_rx <= 0.6f)
+        step_station(1);
+    if (rx < -0.6f && A.prev_rx >= -0.6f)
+        step_station(-1);
+    A.prev_rx = rx;
+
+    pl = globe_view_update(&A.d->lib, &in, (double)t / 1e6, dt);
+    if (pl >= 0)
+        tune_place(pl, st);
+
+    if (pressed & SCE_CTRL_CROSS) {
+        int cand = globe_view_candidate();
+        if (cand >= 0 && !(cand == A.np_place_idx && player_busy(st))) {
+            globe_view_tune_candidate();
+            tune_place(cand, st);
+        } else if (cand >= 0 || A.np_place_idx >= 0) {
+            open_place_in_list(cand >= 0 ? cand : A.np_place_idx);
+        }
+    }
+    if ((pressed & SCE_CTRL_TRIANGLE) && A.np_url[0]) {
+        int si = library_find_url(&A.d->lib, A.np_url);
+        if (si >= 0)
+            toggle_favourite(si);
+    }
+    if (pressed & SCE_CTRL_SQUARE)
+        player_stop();
+    if (pressed & SCE_CTRL_START)
+        open_menu();
+    if (pressed & SCE_CTRL_SELECT)
+        A.mode = MODE_LIST;
+}
+
+int app_update(const SceCtrlData *pad, const player_status *st)
+{
+    unsigned buttons = pad->buttons;
     unsigned pressed = buttons & ~A.prev_buttons;
-    (void)st;
+    int quit = 0;
 
     A.prev_buttons = buttons;
+    save_recent_if_due(0);
 
     if (ime_active()) {
         char text[1024];
@@ -750,8 +1017,16 @@ int app_update(unsigned buttons, const player_status *st)
             else
                 A.flow = FLOW_NONE;
         }
+        A.last_frame = sceKernelGetProcessTimeWide();
         return 0;
     }
+
+    if (A.mode == MODE_GLOBE && A.ov == OV_NONE) {
+        globe_input_frame(pad, pressed, st);
+        A.last_frame = sceKernelGetProcessTimeWide();
+        return 0;
+    }
+    A.last_frame = sceKernelGetProcessTimeWide();
 
     pressed = repeat_mask(buttons, pressed);
     if (!pressed)
@@ -759,7 +1034,8 @@ int app_update(unsigned buttons, const player_status *st)
 
     switch (A.ov) {
     case OV_MENU:
-        return menu_input(pressed);
+        quit = menu_input(pressed);
+        break;
     case OV_PLACE_MENU:
         place_menu_input(pressed);
         break;
@@ -777,7 +1053,7 @@ int app_update(unsigned buttons, const player_status *st)
         browse_input(pressed);
         break;
     }
-    return 0;
+    return quit;
 }
 
 /* ---- drawing ----------------------------------------------------------- */
@@ -945,7 +1221,7 @@ static void draw_row(const view *v, int idx, int y)
         gfx_rect(MARGIN - 12, y + 2, SCREEN_W - 2 * MARGIN + 24 - 10, ROW_H - 4, COL_PANEL_HI);
     gfx_rect(MARGIN - 12, y + 2, 4, ROW_H - 4, sel ? COL_ACCENT : COL_PANEL);
     if (is_fav)
-        vita2d_draw_fill_circle(MARGIN + 6, y + (sub[0] ? 19 : ROW_H / 2), 5, COL_ACCENT);
+        gfx_circle(MARGIN + 6, y + (sub[0] ? 19 : ROW_H / 2), 5, COL_ACCENT);
 
     {
         int tx = MARGIN + (v->kind == ROW_STATION ? 20 : 4);
@@ -1020,7 +1296,7 @@ static void draw_panel(const player_status *st)
             x = gfx_hint(x, PANEL_Y + 56, BTN_TRIANGLE, "Favourite");
         x = gfx_hint(x, PANEL_Y + 56, BTN_SQUARE, "Stop");
         x = gfx_hint_key(x, PANEL_Y + 56, "START", "Menu");
-        gfx_hint_key(x, PANEL_Y + 56, "SELECT", "Details");
+        gfx_hint_key(x, PANEL_Y + 56, "SELECT", "Globe");
     }
 }
 
@@ -1168,25 +1444,119 @@ static void draw_message(void)
 
 static void draw_toast(void)
 {
-    int w;
+    int w, py = A.mode == MODE_GLOBE ? GPANEL_Y : PANEL_Y;
     if (!A.toast[0] || sceKernelGetProcessTimeWide() > A.toast_until)
         return;
     w = gfx_text_width(17, 0, A.toast) + 40;
     if (w > SCREEN_W - 80)
         w = SCREEN_W - 80;
-    gfx_rect((SCREEN_W - w) / 2, PANEL_Y - 52, w, 40, COL_PANEL_HI);
-    gfx_rect((SCREEN_W - w) / 2, PANEL_Y - 52, 3, 40, COL_ACCENT);
-    gfx_text_fit((SCREEN_W - w) / 2 + 20, PANEL_Y - 26, w - 40, COL_TEXT, 17, 0, A.toast);
+    gfx_rect((SCREEN_W - w) / 2, py - 52, w, 40, COL_PANEL_HI);
+    gfx_rect((SCREEN_W - w) / 2, py - 52, 3, 40, COL_ACCENT);
+    gfx_text_fit((SCREEN_W - w) / 2 + 20, py - 26, w - 40, COL_TEXT, 17, 0, A.toast);
+}
+
+static void draw_arrow(int x, int dir, int enabled)
+{
+    float cx = x + ARROW_W / 2.0f, cy = ARROW_Y + ARROW_H / 2.0f;
+    unsigned col = enabled ? COL_TEXT : COL_PANEL_HI;
+
+    gfx_rect(x, ARROW_Y, ARROW_W, ARROW_H, enabled ? COL_PANEL_HI : COL_PANEL);
+    gfx_triangle(cx + 7 * dir, cy, cx - 6 * dir, cy - 10, cx - 6 * dir, cy + 10, col);
+}
+
+/* The globe's bottom panel: the place under the crosshair or playing,
+ * the station and its position in the place, and the controls. */
+static void draw_globe_panel(const player_status *st, double now)
+{
+    const library *lib = &A.d->lib;
+    int cand = globe_view_candidate(), playing = A.np_place_idx;
+    int shown = cand >= 0 ? cand : playing;
+    char buf[64], line[600];
+    unsigned col;
+    int x, y = GPANEL_Y;
+
+    gfx_rect(0, y, SCREEN_W, GLOBE_PANEL_H, COL_PANEL);
+    gfx_rect(0, y, SCREEN_W, 2, COL_PANEL_HI);
+
+    if (shown < 0 || shown >= lib->n_places) {
+        gfx_text(MARGIN, y + 34, COL_TEXT, 21, 1, "Turn the globe");
+        gfx_text_fit(MARGIN, y + 62, SCREEN_W - 2 * MARGIN, COL_DIM, 17, 0,
+                     "Stop the crosshair on a dot to listen to that place.");
+    } else {
+        const place *p = &lib->places[shown];
+        int n = p->n_stations, idx = shown == playing ? playing_index_in(shown) : -1;
+        int name_w = ARROW_L_X - MARGIN - 16;
+
+        x = MARGIN;
+        gfx_text_fit(x, y + 34, name_w, COL_TEXT, 21, 1, p->name);
+        x += gfx_text_width(21, 1, p->name) + 12;
+        if (p->country[0] && x < ARROW_L_X - 60)
+            gfx_text_fit(x, y + 34, ARROW_L_X - 16 - x, COL_DIM, 17, 0, p->country);
+
+        if (shown == playing && A.np_name[0]) {
+            const char *state = state_text(st, &col, buf, sizeof(buf));
+            gfx_text(MARGIN, y + 62, col, 17, 1, state);
+            x = MARGIN + gfx_text_width(17, 1, state) + 12;
+            if (st->state == PLAYER_ERROR && st->error[0])
+                snprintf(line, sizeof(line), "%s", st->error);
+            else
+                snprintf(line, sizeof(line), "%s", A.np_name);
+            gfx_text_fit(x, y + 62, name_w - (x - MARGIN), st->state == PLAYER_ERROR ? COL_BAD
+                                                                                      : COL_TEXT,
+                         17, 0, line);
+        } else if (globe_view_progress(now) < 1) {
+            snprintf(line, sizeof(line), "Tuning in\xE2\x80\xA6  %d station%s", n,
+                     n == 1 ? "" : "s");
+            gfx_text_fit(MARGIN, y + 62, name_w, COL_ACCENT, 17, 0, line);
+        } else {
+            snprintf(line, sizeof(line), "%d station%s. Press Cross to play.", n,
+                     n == 1 ? "" : "s");
+            gfx_text_fit(MARGIN, y + 62, name_w, COL_DIM, 17, 0, line);
+        }
+
+        /* Station counter between the arrows. */
+        draw_arrow(ARROW_L_X, -1, n > 1 && shown == playing);
+        draw_arrow(ARROW_R_X, 1, n > 1 && shown == playing);
+        if (idx >= 0)
+            snprintf(buf, sizeof(buf), "%d / %d", idx + 1, n);
+        else
+            snprintf(buf, sizeof(buf), "%d", n);
+        {
+            int mid = (ARROW_L_X + ARROW_W + ARROW_R_X) / 2;
+            gfx_text(mid - gfx_text_width(17, 1, buf) / 2, ARROW_Y + 29, COL_TEXT, 17, 1, buf);
+        }
+    }
+
+    x = MARGIN;
+    y = SCREEN_H - 14;
+    if (cand >= 0 && !(cand == playing && player_busy(st)))
+        x = gfx_hint(x, y, BTN_CROSS, "Play");
+    else if (cand >= 0 || playing >= 0)
+        x = gfx_hint(x, y, BTN_CROSS, "Stations");
+    if (A.np_url[0])
+        x = gfx_hint(x, y, BTN_TRIANGLE, "Favourite");
+    x = gfx_hint(x, y, BTN_SQUARE, "Stop");
+    x = gfx_hint_key(x, y, "L R", "Zoom");
+    x = gfx_hint_key(x, y, "R-STICK", "Station");
+    x = gfx_hint_key(x, y, "START", "Menu");
+    gfx_hint_key(x, y, "SELECT", "List");
 }
 
 void app_draw(const player_status *st, const sys_status *sys)
 {
     gfx_begin();
-    draw_top_bar(st, sys);
-    draw_tabs();
-    draw_crumb();
-    draw_list();
-    draw_panel(st);
+    if (A.mode == MODE_GLOBE) {
+        double now = now_s();
+        globe_view_draw(&A.d->lib, A.np_place_idx, now);
+        draw_top_bar(st, sys);
+        draw_globe_panel(st, now);
+    } else {
+        draw_top_bar(st, sys);
+        draw_tabs();
+        draw_crumb();
+        draw_list();
+        draw_panel(st);
+    }
     draw_toast();
     switch (A.ov) {
     case OV_MENU:
@@ -1218,9 +1588,24 @@ void app_init(app_data *d)
                                          CONFIG_PREBUFFER_KB_DEFAULT, CONFIG_PREBUFFER_KB_MIN,
                                          CONFIG_PREBUFFER_KB_MAX) * 1024;
     player_set_prebuffer(A.prebuffer);
+    A.np_place_idx = -1;
     /* Start where the stations are. */
     A.tab = d->lib.n_places ? TAB_COUNTRIES : d->lib.n_unplaced ? TAB_UNPLACED : TAB_COUNTRIES;
     build_root();
+
+    /* Front touch only; the rear touchpad is never enabled. */
+    sceTouchSetSamplingState(SCE_TOUCH_PORT_FRONT, SCE_TOUCH_SAMPLING_STATE_START);
+    globe_view_init();
+    if (globe_view_ready() && d->lib.n_places > 0) {
+        /* Open on the globe, turned to the last place played, without
+         * starting it: Cross plays it. */
+        int si = d->recent.count ? library_find_url(&d->lib, d->recent.urls[0]) : -1;
+        int pl = si >= 0 ? station_at(si)->place : -1;
+        A.mode = MODE_GLOBE;
+        globe_view_focus(&d->lib, pl >= 0 ? pl : 0, 0);
+    } else {
+        A.mode = MODE_LIST;
+    }
     if (d->report.errors)
         toast("%d line%s skipped while loading. START, then Load report, for details.",
               d->report.errors, d->report.errors == 1 ? " was" : "s were");
@@ -1229,6 +1614,9 @@ void app_init(app_data *d)
 void app_shutdown(void)
 {
     int i;
+
+    save_recent_if_due(1);
+    globe_view_shutdown();
     for (i = 0; i < MAX_DEPTH; i++)
         view_free(&A.stack[i]);
 }

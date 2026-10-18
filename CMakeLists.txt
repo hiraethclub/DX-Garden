@@ -13,6 +13,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 
 set(CORE_SOURCES
     core/config.c
+    core/globe.c
     core/library.c
     core/load_report.c
     core/playlist.c
@@ -37,18 +38,21 @@ if(VITA)
         vita/data.c
         vita/fs.c
         vita/gfx.c
+        vita/gfx_fallback.c
+        vita/globe_view.c
         vita/ime.c
         vita/log.c
         vita/main.c
         vita/player.c
     )
-    target_include_directories(dxgarden PRIVATE core)
+    target_include_directories(dxgarden PRIVATE core "${VITASDK}/arm-vita-eabi/include/freetype2")
     target_compile_definitions(dxgarden PRIVATE DXG_VERSION="${DXG_VERSION}")
     # vita/ uses POSIX bits (strncasecmp) from newlib.
     set_target_properties(dxgarden PROPERTIES C_EXTENSIONS ON)
     target_compile_options(dxgarden PRIVATE -Wall -Wextra -O2)
 
     target_link_libraries(dxgarden
+        vitaGL vitashark SceShaccCgExt mathneon taihen_stub SceShaccCg_stub
         vita2d
         curl mbedtls mbedx509 mbedcrypto zstd
         mpg123
@@ -61,12 +65,16 @@ if(VITA)
         SceCtrl_stub
         SceDisplay_stub
         SceGxm_stub
+        SceIme_stub
+        SceKernelDmacMgr_stub
         SceNet_stub
         SceNetCtl_stub
         ScePgf_stub
         ScePower_stub
         SceRtc_stub
         SceSysmodule_stub
+        SceTouch_stub
+        stdc++
     )
 
     vita_create_self(eboot.bin dxgarden)
@@ -81,12 +89,14 @@ if(VITA)
         FILE assets/fonts/NotoSans-Regular.ttf fonts/NotoSans-Regular.ttf
         FILE assets/fonts/NotoSans-Bold.ttf fonts/NotoSans-Bold.ttf
         FILE assets/fonts/OFL.txt fonts/OFL.txt
+        FILE assets/map/world.png map/world.png
     )
 else()
     add_executable(dxgarden_test
         ${CORE_SOURCES}
         tests/test_main.c
         tests/test_library.c
+        tests/test_globe.c
     )
     target_include_directories(dxgarden_test PRIVATE core)
     target_compile_options(dxgarden_test PRIVATE -Wall -Wextra -Wpedantic -g

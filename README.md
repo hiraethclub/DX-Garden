@@ -9,16 +9,22 @@ files you drop in, or from URLs you type in.
 
 ## Status
 
-Early development (build 00.03). It plays MP3 streams over HTTP and HTTPS
+Early development (build 00.07). It plays MP3 streams over HTTP and HTTPS
 from your own station list, which you can browse by country, city or genre,
 with favourites and recently played. Imported playlists can be given a place
-in the app. The globe and the other audio formats come in later milestones
-(see `NOTES.md`).
+in the app. Build 00.07 adds the globe: turn it and stop the crosshair on a
+place to hear it. Other audio formats come in later milestones (see
+`NOTES.md`).
 
 ## Building
 
-Needs [VitaSDK](https://vitasdk.org) with curl (mbedTLS build), mpg123 and
-libvita2d from vdpm.
+Needs [VitaSDK](https://vitasdk.org) with curl (mbedTLS build), mpg123,
+freetype, vitaGL and libvita2d from vdpm.
+
+**On the Vita, from build 00.05:** `ur0:data/libshacccg.suprx` (the runtime
+shader compiler, extracted with ShaRKBR33D) must be present, because vitaGL
+compiles its shaders on the device. Without it the app shows a message and
+quits.
 
 ```sh
 cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=$VITASDK/share/vita.toolchain.cmake -DCMAKE_BUILD_TYPE=Release
@@ -53,3 +59,6 @@ All in `ux0:data/dxgarden/`. They are created on first run if missing.
 - Noto Sans by the Noto Project Authors, SIL Open Font License 1.1
   (`assets/fonts/OFL.txt`, also shipped in the VPK).
 - LiveArea art is drawn by `tools/make_livearea.py` for this project.
+- The globe map (`assets/map/world.png`) is drawn by `tools/make_map.py`
+  from [Natural Earth](https://www.naturalearthdata.com) 1:50m data, which
+  is in the public domain.

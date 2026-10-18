@@ -36,7 +36,9 @@ it so builds can be told apart.
 - **From M3 on: `ur0:data/libshacccg.suprx`** is required, because vitaGL
   compiles shaders at runtime. It is present on the test Vita. The app must
   check for it at startup and show a clear message instead of crashing when
-  it is missing. (M1 uses libvita2d, which does not need it.)
+  it is missing. From 00.05 the app checks `ur0:data/libshacccg.suprx` and
+  `ur0:data/external/libshacccg.suprx`; if neither exists it shows the
+  message with libvita2d (precompiled shaders, system font) and quits.
 
 ## Libraries (VitaSDK 2026.08, vdpm)
 
@@ -55,11 +57,14 @@ Agreed before M1:
 
 `core/` uses no external libraries.
 
-## Map texture (proposal, for M3)
+## Map texture (for M3)
 
-Our own dark-style texture drawn from Natural Earth vector data (public
-domain). NASA Blue Marble (public domain) is the photographic alternative.
-Not chosen yet; decide before M3.
+**Chosen: our own dark texture drawn from Natural Earth vector data**
+(public domain, naturalearthdata.com). A script in `tools/` will download
+the shapes once on the build machine and draw land, sea and borders in the
+app's colours. This is map geography only; no station data is involved.
+NASA Blue Marble was the alternative, turned down as too bright and busy
+behind the dots and text.
 
 ## M1: plays one stream (build 00.01)
 
@@ -297,3 +302,141 @@ Vita, with the expected results.
 - **Steady play:** fill 143-163 KB, no underruns, decode 2% CPU.
 - **Station switching:** old session torn down in about 0.15 s.
 - **M2 done.**
+
+## M3: the globe (plan)
+
+Split into two builds so the renderer change can be tested on its own:
+
+1. **00.05: same app on vitaGL.** vitaGL and libvita2d can't both drive the
+   GPU, so every screen moves to vitaGL first. There should be no visible
+   change.
+2. **00.07: the globe** (00.06 became the fix for 00.05's start-up crash). Textured sphere, place dots, fixed crosshair,
+   rotate with left stick, d-pad or touch drag, zoom with L/R or pinch,
+   about 0.8 s settle before a place starts playing, bottom panel.
+
+**Globe controls (agreed):** left stick, d-pad or touch drag rotate; L/R or
+pinch zoom; right stick left/right or the panel arrows step through
+stations in a place; SELECT switches between globe and list; Cross plays
+or reopens the place; Triangle favourite; Square stop; START menu. Player
+details move to the START menu only.
+
+## Build 00.05: renderer moved to vitaGL
+
+- **Text** is drawn from our own glyph atlas instead of libvita2d's: one
+  1024x1024 RGBA texture (4 MB) shared by every size and weight, filled on
+  first use, with a 1 px gap between glyphs. Each (weight, size) pair has
+  its own FreeType size object, so glyphs are still rendered at exactly the
+  size drawn and copied 1:1. Same Noto Sans, same six sizes, same hinting
+  as 00.04, so text should look the same.
+- **One draw call per frame:** rectangles, circles and icon strokes sample
+  a white block in the same texture as the glyphs, and everything is
+  batched.
+- **If the atlas fills up** (only likely with many different scripts on
+  screen), it is cleared at the start of the next frame and refilled. Logged
+  as `gfx: glyph atlas full`.
+- **Memory:** vitaGL is started with 16 MB of RAM left outside its pools.
+  The log prints the pool sizes at start.
+- **Frame log:** every 10 s, `frame:` lines give frame count, average and
+  worst frame time, CPU time spent drawing, and atlas fill. At 60 fps the
+  average should be about 16.7 ms.
+- libvita2d stays linked only for the "shader compiler missing" message.
+- **Uncertain on hardware:** whether vitaGL's `glTexSubImage2D` into a
+  texture the GPU is already drawing from in the same frame shows new
+  glyphs correctly. Only new parts of the atlas are written mid-frame, so
+  it should be safe, but if new text appears blank or garbled for one frame
+  this is the cause. Also untested: first-frame stalls while vitaGL compiles
+  its shaders (shows in the `worst` figure of the first `frame:` line).
+
+## Build 00.06: fix for 00.05 crashing at start-up (C2-12828-1)
+
+- **What the log and crash dump showed:** the log ended at
+  `gfx: vglInitExtended failed`. In the dump, the main thread hit a data
+  abort inside SceGxm, called from `vita2d_pgf_draw_text` in
+  `gfx_fallback_message`. vitaGL's own threads (garbage collector, display
+  queue, splash screen) were running.
+- **Cause 1:** in this vitaGL build, the `vglInit*` return value is not a
+  success flag. Disassembling `vglInitWithCustomSizes` in `libvitaGL.a`
+  shows it returns GL_FALSE when the requested resolution fits the display
+  (the normal case) and GL_TRUE when vitaGL had to shrink it. The header
+  doesn't say so. 00.05 treated a good start as a failure. 00.06 ignores
+  the value except to log a resize.
+- **Cause 2:** the failure path then started libvita2d on a GPU vitaGL was
+  already using, which crashes. 00.06 only uses the vita2d message screen
+  for problems found *before* vitaGL starts (missing shader compiler,
+  missing fonts). A failure after vitaGL starts is logged and the app quits.
+- **How the dump was read:** the core is a gzipped ELF. A small script in
+  `build/coredebug/` (git-ignored) pulls the thread registers, module
+  list and stack out of its notes. The eboot was loaded 0x9000 above its
+  link address, so stack words are shifted back by that before
+  `arm-vita-eabi-addr2line`.
+- **Other findings:**
+  - vitaGL start-up took about 3.6 s.
+  - vitaGL now shows its own splash screen at start-up. There is no
+    documented switch to turn it off. It isn't Radio Garden artwork, so it
+    is left as is for now.
+
+## Build 00.06 on hardware
+
+- Starts and looks the same as 00.04. No glitches, according to the tester.
+- vitaGL start-up: 3.4 s. Its pools have 58 MB of RAM and 83 MB of video
+  memory free.
+- `frame:` lines: a steady 60 fps (16.7 ms average), with 0.8-1.5 ms of CPU
+  per frame for drawing. The glyph atlas was 3-5% full.
+- **The first frame took 1.5 s**: vitaGL compiles its shaders then.
+- **Worst frames of 85-96 ms** appear in 10-second windows that contain a
+  station switch, the keyboard or a new screen. Station switching does not
+  block the main loop, so the likely cause is file writes on the main
+  thread (`recent.txt` on every play) and rendering new glyphs. From 00.07,
+  `recent.txt` is written 5 s after the last change rather than on every
+  play.
+
+## Build 00.07: the globe
+
+- **Map:** `assets/map/world.png`, 4096x2048, drawn by `tools/make_map.py`
+  from Natural Earth 1:50m land, lakes and country borders (public domain,
+  release v5.1.2). The script uses its own scanline fill, because Pillow's
+  polygon fill drew stray horizontal lines across the sea. The PNG is 400 KB
+  and is loaded as an RGB565 texture: 16 MB of video memory, about 21 MB
+  with mipmaps. The log gives the load time.
+- **Drawing:** orthographic globe from a 64x128 mesh, projected on the CPU
+  each frame and drawn through the same batch as the 2D UI. Only cells fully
+  on the near side are drawn; a dark disc under the globe covers the thin
+  rim this leaves at the edge. Shading darkens towards the edge. A soft
+  ring outlines the globe.
+- **Maths in `core/globe.c`** (unit-tested on Linux): projection, dragging,
+  zoom limits, coasting, easing the short way across the date line,
+  picking the nearest place within 26 px of the crosshair, and the dwell
+  timer.
+- **Behaviour:**
+  - A place starts after 0.8 s under the crosshair. An amber arc around the
+    crosshair shows the countdown.
+  - Once the globe stops, it eases the nearest dot onto the crosshair.
+  - Passing over places on the way doesn't start them.
+  - The app opens on the globe, turned to the last place played, without
+    playing anything. Cross plays it.
+- **Choosing a station:** in a place, a favourite plays first, otherwise
+  the first station by name. The right stick or the panel arrows (touch)
+  step through the place's stations.
+- **Controls on the globe:**
+  - Rotate: left stick, d-pad, or a one-finger drag.
+  - Zoom: L/R, or a two-finger pinch.
+  - Station: right-stick flick left/right.
+  - Cross: plays the place under the crosshair, or opens its stations in
+    the list.
+  - Triangle: favourites the playing station.
+  - Square: stop.
+  - START: menu.
+  - SELECT: list.
+  - In the list, SELECT returns to the globe. Player details are in the
+    START menu.
+  - Only the front touch panel is enabled.
+- **Zoom range:** from the whole globe (radius 185 px) to about 14 degrees
+  across the screen (radius 4000 px). At full zoom the map is magnified
+  about 6x, so coastlines are soft.
+- **Uncertain on hardware:**
+  - Frame rate with the globe. The mesh is about 24,000 vertices a frame
+    when zoomed out.
+  - Whether vitaGL builds mipmaps for a 565 texture. If it can't, the log
+    says so and the map may shimmer when zoomed out.
+  - How the stick speed and touch-drag feel.
+  - How long the map takes to load.
