@@ -148,6 +148,25 @@ static const struct {
       "# Audio to collect before playback starts or resumes, in KB (16-256).\n"
       "# At 128 kbps, 16 KB is about one second. More rides out longer Wi-Fi\n"
       "# dropouts but takes longer to start.\n" },
+    { "globe", "stick_speed",
+      "# How fast the left stick and d-pad turn the globe, in percent (50-200).\n" },
+    { "globe", "snap_px",
+      "# How close (in pixels) a dot must be to the crosshair to be pulled\n"
+      "# onto it when you stop (0 turns this off, up to 96).\n" },
+    { "buttons", "favourite",
+      "# Button for each action. Use: triangle, square, l, r, start, select,\n"
+      "# or none. Cross and Circle are fixed. Within the globe or the list a\n"
+      "# button can only do one thing; if two clash, all go back to the\n"
+      "# defaults. Menu must have a button.\n" },
+    { "buttons", "stop", "" },
+    { "buttons", "menu", "" },
+    { "buttons", "view", "# Switch between the globe and the list.\n" },
+    { "buttons", "zoom_in", "# Globe only.\n" },
+    { "buttons", "zoom_out", "# Globe only.\n" },
+    { "buttons", "next_station", "# Globe only. The right stick also does this.\n" },
+    { "buttons", "prev_station", "# Globe only.\n" },
+    { "buttons", "next_tab", "# List only.\n" },
+    { "buttons", "prev_tab", "# List only.\n" },
 };
 
 #define N_KNOWN (sizeof(known) / sizeof(known[0]))

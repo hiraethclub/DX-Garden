@@ -36,6 +36,9 @@ int globe_view_init(void);
 int globe_view_ready(void);
 void globe_view_shutdown(void);
 
+/* Stick speed in percent (100 = default) and auto-select reach in px
+ * (0 = off). */
+void globe_view_set_tuning(int stick_pct, int snap_px);
 /* Forget place indices after the library is rebuilt. */
 void globe_view_library_changed(void);
 /* Turn to a place (smoothly if `ease`), and count it as tuned so it

@@ -9,12 +9,13 @@ files you drop in, or from URLs you type in.
 
 ## Status
 
-Early development (build 00.07). It plays MP3 streams over HTTP and HTTPS
+Early development (build 00.10). It plays MP3 streams over HTTP and HTTPS
 from your own station list, which you can browse by country, city or genre,
 with favourites and recently played. Imported playlists can be given a place
 in the app. Build 00.07 adds the globe: turn it and stop the crosshair on a
-place to hear it. Other audio formats come in later milestones (see
-`NOTES.md`).
+place to hear it. Buttons other than Cross and Circle can be remapped
+under START, then Settings. Other audio formats come in later milestones
+(see `NOTES.md`).
 
 ## Building
 

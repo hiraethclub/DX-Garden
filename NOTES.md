@@ -507,3 +507,67 @@ details move to the START menu only.
   of the crosshair is pulled onto it. This settles in about 0.25 s. The
   dwell timer still counts from when the dot is within 26 px, so it plays
   about 0.8 s after landing.
+
+## Build 00.09 on hardware: M3 done
+
+- **Tester:** the globe stops dead when the stick is released,
+  auto-select feels good, and the globe looks right (the depth test hides
+  the far side as intended).
+- **Log:**
+  - The globe was ready 5.0 s after launch (5.9 s in 00.07). The map
+    decode overlapped vitaGL completely ("waited 0 ms"). Uploading the
+    map, its mipmaps and the line data takes 1.3 s.
+  - Drawing CPU 4.4-4.6 ms per frame (9-15 ms in 00.07), steady 60 fps.
+  - 12 tunes across 9 places, no repeated restarts, no underruns.
+- **Open:**
+  - **Occasional 68-77 ms frames.** These are still there with the log
+    writer off the main loop, and the worst windows contain HTTPS
+    connects. The guess is that mbedTLS handshakes in the network thread
+    share a core with the main loop. The next step is to pin the network
+    and decoder threads to the other user cores and compare `frame:`
+    lines.
+  - Map upload time (1.3 s) could be trimmed later.
+- **M3 done.**
+
+## Build 00.10: Settings (button remapping) and core pinning
+
+- **Remapping**, from START, then Settings:
+  - Remappable buttons: Triangle, Square, L, R, START and SELECT.
+  - Fixed: Cross (confirm), Circle (back), and the d-pad and sticks
+    (movement and cursor).
+  - Actions:
+    - Both views: Favourite, Stop, Menu, Globe/list.
+    - Globe: Zoom in/out, and Next/Previous station (unassigned by
+      default; the right stick does these).
+    - List: Next/Previous tab.
+  - A button can mean different things in the globe and the list, but only
+    one thing within a view.
+  - Assigning a taken button swaps the two actions. If a swap would clash
+    in the other view, it is refused with a message naming the actions
+    using that button.
+  - Menu can't be left without a button, so Settings stays reachable.
+  - Cross while choosing a button sets None.
+  - The logic is in `core/controls.c`, unit-tested on Linux.
+- **Globe tuning** on the same screen: stick speed 50-200% and auto-select
+  reach 0-96 px. Both apply straight away.
+- **Saved** to `config.ini` (`[buttons]`, `[globe]`) when Settings closes.
+  If the file has two actions on one button in a view, or Menu set to
+  none, all buttons go back to the defaults and a message says so.
+- **On-screen hints** (panels, tab bar, details) show the current buttons.
+- **Player details:** the prebuffer now changes with d-pad Left/Right
+  instead of L/R, so it doesn't depend on the mapping.
+- **Core pinning:** the main loop is on core 0, the network thread on
+  core 1 and the decoder on core 2. This tests whether the 70 ms frames
+  came from TLS handshakes sharing the main loop's core.
+
+## Build 00.11: About
+
+- Settings has a new last row, **About DX Garden**. It shows:
+  - App name, version and build revision.
+  - A one-line description (own streams, no station directory).
+  - Author: Aisling de Grás, aisling@hiraeth.club, Threads @hiraeth.clwb.
+  - Credits for the map data, font and CA certificates.
+- **Build revision:** `cmake/revision.cmake` runs on every build and
+  writes `build/generated/revision.h` with the short git commit. It adds
+  `-modified` when tracked files have uncommitted changes, so a build made
+  from a clean commit shows just the hash.

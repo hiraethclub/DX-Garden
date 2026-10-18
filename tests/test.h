@@ -19,5 +19,6 @@ extern int checks;
 
 void run_library_tests(void);
 void run_globe_tests(void);
+void run_controls_tests(void);
 
 #endif

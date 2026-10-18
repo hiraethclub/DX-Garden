@@ -9,6 +9,7 @@
 #include <mpg123.h>
 #include <psp2/audioout.h>
 #include <psp2/kernel/processmgr.h>
+#include <psp2/kernel/cpu.h>
 #include <psp2/kernel/threadmgr.h>
 
 #include "log.h"
@@ -427,12 +428,13 @@ static void start_session(const char *url, size_t prebuffer)
     P.decode_us = P.samples_out = 0;
 
     LOG("player: start %s (prebuffer %u KB)", url, (unsigned)(prebuffer / 1024));
-    P.net_thid = sceKernelCreateThread("dxg_net", net_thread,
-                                       THREAD_PRIO_DEFAULT, NET_STACK, 0, 0, NULL);
+    /* Each on its own core, away from the main loop on core 0: TLS
+     * handshakes are CPU-heavy and stalled frames when they shared it. */
+    P.net_thid = sceKernelCreateThread("dxg_net", net_thread, THREAD_PRIO_DEFAULT, NET_STACK, 0,
+                                       SCE_KERNEL_CPU_MASK_USER_1, NULL);
     /* Higher priority (lower number) than the UI so audio never starves. */
-    P.dec_thid = sceKernelCreateThread("dxg_decode", dec_thread,
-                                       THREAD_PRIO_DEFAULT - 20, DEC_STACK, 0, 0,
-                                       NULL);
+    P.dec_thid = sceKernelCreateThread("dxg_decode", dec_thread, THREAD_PRIO_DEFAULT - 20,
+                                       DEC_STACK, 0, SCE_KERNEL_CPU_MASK_USER_2, NULL);
     if (P.net_thid < 0 || P.dec_thid < 0) {
         LOG("player: thread create failed 0x%08X 0x%08X", P.net_thid, P.dec_thid);
         snprintf(P.error, sizeof(P.error), "Could not create player threads");

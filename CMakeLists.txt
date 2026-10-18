@@ -13,6 +13,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 
 set(CORE_SOURCES
     core/config.c
+    core/controls.c
     core/globe.c
     core/library.c
     core/load_report.c
@@ -45,7 +46,15 @@ if(VITA)
         vita/main.c
         vita/player.c
     )
-    target_include_directories(dxgarden PRIVATE core "${VITASDK}/arm-vita-eabi/include/freetype2")
+    target_include_directories(dxgarden PRIVATE core "${VITASDK}/arm-vita-eabi/include/freetype2"
+                               "${CMAKE_BINARY_DIR}/generated")
+    # revision.h: the git commit, refreshed on every build (shown in About).
+    add_custom_target(dxg_revision
+        COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR}
+                -DOUT=${CMAKE_BINARY_DIR}/generated/revision.h
+                -P ${CMAKE_SOURCE_DIR}/cmake/revision.cmake
+        BYPRODUCTS ${CMAKE_BINARY_DIR}/generated/revision.h)
+    add_dependencies(dxgarden dxg_revision)
     target_compile_definitions(dxgarden PRIVATE DXG_VERSION="${DXG_VERSION}")
     # vita/ uses POSIX bits (strncasecmp) from newlib.
     set_target_properties(dxgarden PROPERTIES C_EXTENSIONS ON)
@@ -98,6 +107,7 @@ else()
         tests/test_main.c
         tests/test_library.c
         tests/test_globe.c
+        tests/test_controls.c
     )
     target_include_directories(dxgarden_test PRIVATE core)
     target_compile_options(dxgarden_test PRIVATE -Wall -Wextra -Wpedantic -g

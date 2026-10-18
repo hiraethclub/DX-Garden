@@ -26,7 +26,7 @@
 #define PICK_PX 26.0      /* how close to the crosshair a dot must be */
 #define STICK_SPEED 700.0 /* px/s at full stick, zoomed in */
 #define ZOOM_RATE 1.7     /* e^1.7 = 5.5x per second of L/R */
-#define SNAP_PX 48.0      /* on release, a dot this close is pulled in */
+#define SNAP_PX 48.0      /* default: on release, a dot this close is pulled in */
 #define SNAP_AFTER 0.05   /* s of no input before pulling it in */
 #define SNAP_RATE 12.0    /* settles in about a quarter of a second */
 #define FOCUS_RATE 4.2    /* gliding to a place chosen elsewhere */
@@ -46,6 +46,16 @@
 typedef struct {
     uint32_t first, count;
 } tile_range;
+
+/* Settings (config.ini [globe]); kept outside G, which init clears. */
+static double stick_scale = 1.0;
+static double snap_px = SNAP_PX;
+
+void globe_view_set_tuning(int stick_pct, int snap)
+{
+    stick_scale = stick_pct / 100.0;
+    snap_px = snap;
+}
 
 /* Filled by the loader thread while vitaGL starts up. */
 static struct {
@@ -377,8 +387,8 @@ int globe_view_update(const library *lib, const globe_input *in, double now, dou
             zs = 0.35;
         if (zs > 1)
             zs = 1;
-        G.vx = -sx * mag * STICK_SPEED * zs;
-        G.vy = -sy * mag * STICK_SPEED * zs;
+        G.vx = -sx * mag * STICK_SPEED * stick_scale * zs;
+        G.vy = -sy * mag * STICK_SPEED * stick_scale * zs;
         globe_drag(&G.cam, G.vx * dt, G.vy * dt);
         /* No glide after letting go: the globe stops where the stick
          * leaves it (00.07/00.08 drifted past dots). Only a finger fling
@@ -407,10 +417,10 @@ int globe_view_update(const library *lib, const globe_input *in, double now, dou
         return -1;
     }
 
-    if (!active && G.vx == 0 && G.vy == 0 && now - G.last_input > SNAP_AFTER) {
+    if (!active && snap_px > 0 && G.vx == 0 && G.vy == 0 && now - G.last_input > SNAP_AFTER) {
         /* Auto-select: pull the nearest dot within reach onto the
          * crosshair. */
-        int near = globe_pick(&G.cam, lib, SNAP_PX, NULL);
+        int near = globe_pick(&G.cam, lib, snap_px, NULL);
         if (near >= 0)
             globe_ease_to(&G.cam, lib->places[near].lat, lib->places[near].lon, SNAP_RATE, dt);
     }

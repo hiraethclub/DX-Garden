@@ -9,11 +9,13 @@
 #include <psp2/kernel/processmgr.h>
 #include <psp2/touch.h>
 
+#include "controls.h"
 #include "gfx.h"
 #include "globe_view.h"
 #include "ime.h"
 #include "log.h"
 #include "playlist.h"
+#include "revision.h"
 #include "stations_file.h"
 #include "text.h"
 
@@ -78,7 +80,8 @@ typedef enum {
     OV_DETAILS,
     OV_REPORT,
     OV_PLACE_MENU,
-    OV_MESSAGE
+    OV_MESSAGE,
+    OV_SETTINGS
 } overlay;
 
 typedef enum {
@@ -95,6 +98,7 @@ typedef enum {
     MENU_PLACE,
     MENU_ADD_URL,
     MENU_DETAILS,
+    MENU_SETTINGS,
     MENU_REPORT,
     MENU_RELOAD,
     MENU_QUIT
@@ -151,7 +155,34 @@ static struct {
 
     unsigned prev_buttons;
     SceUInt64 held_since, last_repeat;
+
+    /* Button map and globe tuning (config.ini [buttons], [globe]). */
+    ctl_map ctl;
+    int stick_pct, snap_px;
+    int set_sel;      /* Settings row */
+    int set_capture;  /* action waiting for a button, or -1 */
+    int set_dirty;
+    int set_about;    /* the About panel is open inside Settings */
 } A;
+
+/* ---- button mapping ------------------------------------------------------ */
+
+static const unsigned CB_BITS[CB_COUNT] = {
+    [CB_NONE] = 0,
+    [CB_TRIANGLE] = SCE_CTRL_TRIANGLE,
+    [CB_SQUARE] = SCE_CTRL_SQUARE,
+    [CB_L] = SCE_CTRL_LTRIGGER,
+    [CB_R] = SCE_CTRL_RTRIGGER,
+    [CB_START] = SCE_CTRL_START,
+    [CB_SELECT] = SCE_CTRL_SELECT,
+};
+
+/* Is the button mapped to `a` among `mask` (pressed or held)? */
+static int act(unsigned mask, ctl_action a)
+{
+    unsigned bit = CB_BITS[A.ctl.map[a]];
+    return bit && (mask & bit);
+}
 
 static view *cur(void)
 {
@@ -439,6 +470,7 @@ static void open_menu(void)
         A.menu[A.menu_n++] = MENU_PLACE;
     A.menu[A.menu_n++] = MENU_ADD_URL;
     A.menu[A.menu_n++] = MENU_DETAILS;
+    A.menu[A.menu_n++] = MENU_SETTINGS;
     A.menu[A.menu_n++] = MENU_REPORT;
     A.menu[A.menu_n++] = MENU_RELOAD;
     A.menu[A.menu_n++] = MENU_QUIT;
@@ -458,6 +490,9 @@ static void menu_label(menu_action a, char *out, size_t n)
         break;
     case MENU_DETAILS:
         snprintf(out, n, "Player details and prebuffer");
+        break;
+    case MENU_SETTINGS:
+        snprintf(out, n, "Settings: buttons and globe");
         break;
     case MENU_REPORT:
         if (A.d->report.errors || A.d->report.notices)
@@ -598,8 +633,8 @@ static void browse_input(unsigned p)
     if (p & SCE_CTRL_RIGHT)
         move_sel(VISIBLE_ROWS);
 
-    if (p & (SCE_CTRL_LTRIGGER | SCE_CTRL_RTRIGGER)) {
-        int step = (p & SCE_CTRL_RTRIGGER) ? 1 : -1;
+    if (act(p, ACT_PREV_TAB) || act(p, ACT_NEXT_TAB)) {
+        int step = act(p, ACT_NEXT_TAB) ? 1 : -1;
         if (A.picking)
             set_tab(A.tab == TAB_COUNTRIES ? TAB_CITIES : TAB_COUNTRIES);
         else
@@ -646,13 +681,13 @@ static void browse_input(unsigned p)
         }
         return;
     }
-    if ((p & SCE_CTRL_TRIANGLE) && v->kind == ROW_STATION && sel_item >= 0 && !A.picking)
+    if (act(p, ACT_FAVOURITE) && v->kind == ROW_STATION && sel_item >= 0 && !A.picking)
         toggle_favourite(sel_item);
-    if (p & SCE_CTRL_SQUARE)
+    if (act(p, ACT_STOP))
         player_stop();
-    if (p & SCE_CTRL_START)
+    if (act(p, ACT_MENU))
         open_menu();
-    if ((p & SCE_CTRL_SELECT) && !A.picking)
+    if (act(p, ACT_VIEW) && !A.picking)
         show_globe();
 }
 
@@ -662,7 +697,7 @@ static int menu_input(unsigned p)
         A.menu_sel = (A.menu_sel + A.menu_n - 1) % A.menu_n;
     if (p & SCE_CTRL_DOWN)
         A.menu_sel = (A.menu_sel + 1) % A.menu_n;
-    if (p & (SCE_CTRL_CIRCLE | SCE_CTRL_START)) {
+    if ((p & SCE_CTRL_CIRCLE) || act(p, ACT_MENU)) {
         A.ov = OV_NONE;
         return 0;
     }
@@ -679,6 +714,12 @@ static int menu_input(unsigned p)
         break;
     case MENU_DETAILS:
         A.ov = OV_DETAILS;
+        break;
+    case MENU_SETTINGS:
+        A.set_sel = 0;
+        A.set_capture = -1;
+        A.set_about = 0;
+        A.ov = OV_SETTINGS;
         break;
     case MENU_REPORT:
         A.report_top = 0;
@@ -730,19 +771,19 @@ static void details_input(unsigned p)
 {
     size_t step = CONFIG_PREBUFFER_KB_MIN * 1024;
 
-    if ((p & SCE_CTRL_LTRIGGER) && A.prebuffer > CONFIG_PREBUFFER_KB_MIN * 1024) {
+    if ((p & SCE_CTRL_LEFT) && A.prebuffer > CONFIG_PREBUFFER_KB_MIN * 1024) {
         A.prebuffer -= step;
         player_set_prebuffer(A.prebuffer);
         A.prebuffer_dirty = 1;
     }
-    if ((p & SCE_CTRL_RTRIGGER) && A.prebuffer < CONFIG_PREBUFFER_KB_MAX * 1024) {
+    if ((p & SCE_CTRL_RIGHT) && A.prebuffer < CONFIG_PREBUFFER_KB_MAX * 1024) {
         A.prebuffer += step;
         player_set_prebuffer(A.prebuffer);
         A.prebuffer_dirty = 1;
     }
-    if (p & SCE_CTRL_SQUARE)
+    if (act(p, ACT_STOP))
         player_stop();
-    if (p & (SCE_CTRL_CIRCLE | SCE_CTRL_SELECT | SCE_CTRL_CROSS)) {
+    if (p & (SCE_CTRL_CIRCLE | SCE_CTRL_CROSS)) {
         A.ov = OV_NONE;
         if (A.prebuffer_dirty) {
             config_set_int(&A.d->cfg, "player", "prebuffer_kb", (int)(A.prebuffer / 1024));
@@ -774,6 +815,132 @@ static void report_input(unsigned p)
         A.report_top = max_top;
     if (p & (SCE_CTRL_CIRCLE | SCE_CTRL_CROSS))
         A.ov = OV_NONE;
+}
+
+/* ---- settings ---------------------------------------------------------- */
+
+#define SET_STICK ACT_COUNT
+#define SET_SNAP (ACT_COUNT + 1)
+#define SET_RESET (ACT_COUNT + 2)
+#define SET_ABOUT (ACT_COUNT + 3)
+#define SET_ROWS (ACT_COUNT + 4)
+
+static void settings_apply(void)
+{
+    globe_view_set_tuning(A.stick_pct, A.snap_px);
+}
+
+static void settings_close(void)
+{
+    A.ov = OV_NONE;
+    A.set_capture = -1;
+    if (!A.set_dirty)
+        return;
+    A.set_dirty = 0;
+    ctl_save(&A.ctl, &A.d->cfg);
+    config_set_int(&A.d->cfg, "globe", "stick_speed", A.stick_pct);
+    config_set_int(&A.d->cfg, "globe", "snap_px", A.snap_px);
+    if (data_save_config(A.d) != 0)
+        message("Could not save config.ini. Is the memory card full?");
+    else
+        LOG("settings: saved");
+}
+
+static void assign_button(ctl_action a, ctl_button b)
+{
+    int swapped, rc = ctl_assign(&A.ctl, a, b, &swapped);
+
+    A.set_capture = -1;
+    if (rc != 0) {
+        if (b == CB_NONE) {
+            toast("%s needs a button", ctl_action_label(a));
+        } else {
+            char who[160] = "";
+            int o;
+            for (o = 0; o < ACT_COUNT; o++)
+                if (o != (int)a && A.ctl.map[o] == b &&
+                    (ctl_action_contexts((ctl_action)o) & ctl_action_contexts(a))) {
+                    size_t n = strlen(who);
+                    snprintf(who + n, sizeof(who) - n, "%s%s", n ? " and " : "",
+                             ctl_action_label((ctl_action)o));
+                }
+            toast("%s is used by %s. Change that first.", ctl_button_label(b), who);
+        }
+        return;
+    }
+    A.set_dirty = 1;
+    LOG("settings: %s -> %s", ctl_action_key(a), ctl_button_key(b));
+    if (swapped >= 0)
+        toast("Swapped: %s is now on %s", ctl_action_label((ctl_action)swapped),
+              ctl_button_label(A.ctl.map[swapped]));
+}
+
+static void settings_input(unsigned p)
+{
+    int b;
+
+    if (A.set_about) {
+        if (p & (SCE_CTRL_CIRCLE | SCE_CTRL_CROSS))
+            A.set_about = 0;
+        return;
+    }
+    if (A.set_capture >= 0) {
+        if (p & SCE_CTRL_CIRCLE) {
+            A.set_capture = -1;
+            return;
+        }
+        if (p & SCE_CTRL_CROSS) {
+            assign_button((ctl_action)A.set_capture, CB_NONE);
+            return;
+        }
+        for (b = CB_TRIANGLE; b < CB_COUNT; b++)
+            if (p & CB_BITS[b]) {
+                assign_button((ctl_action)A.set_capture, (ctl_button)b);
+                return;
+            }
+        return;
+    }
+
+    if (p & SCE_CTRL_UP)
+        A.set_sel = (A.set_sel + SET_ROWS - 1) % SET_ROWS;
+    if (p & SCE_CTRL_DOWN)
+        A.set_sel = (A.set_sel + 1) % SET_ROWS;
+    if (p & (SCE_CTRL_LEFT | SCE_CTRL_RIGHT)) {
+        int dir = (p & SCE_CTRL_RIGHT) ? 1 : -1;
+        if (A.set_sel == SET_STICK) {
+            A.stick_pct += dir * 10;
+            if (A.stick_pct < CONFIG_STICK_SPEED_MIN)
+                A.stick_pct = CONFIG_STICK_SPEED_MIN;
+            if (A.stick_pct > CONFIG_STICK_SPEED_MAX)
+                A.stick_pct = CONFIG_STICK_SPEED_MAX;
+            A.set_dirty = 1;
+            settings_apply();
+        } else if (A.set_sel == SET_SNAP) {
+            A.snap_px += dir * 8;
+            if (A.snap_px < CONFIG_SNAP_PX_MIN)
+                A.snap_px = CONFIG_SNAP_PX_MIN;
+            if (A.snap_px > CONFIG_SNAP_PX_MAX)
+                A.snap_px = CONFIG_SNAP_PX_MAX;
+            A.set_dirty = 1;
+            settings_apply();
+        }
+    }
+    if (p & SCE_CTRL_CROSS) {
+        if (A.set_sel < ACT_COUNT) {
+            A.set_capture = A.set_sel;
+        } else if (A.set_sel == SET_ABOUT) {
+            A.set_about = 1;
+        } else if (A.set_sel == SET_RESET) {
+            ctl_defaults(&A.ctl);
+            A.stick_pct = CONFIG_STICK_SPEED_DEFAULT;
+            A.snap_px = CONFIG_SNAP_PX_DEFAULT;
+            A.set_dirty = 1;
+            settings_apply();
+            toast("Buttons and globe settings are back to their defaults");
+        }
+    }
+    if (p & SCE_CTRL_CIRCLE)
+        settings_close();
 }
 
 /* ---- globe ------------------------------------------------------------- */
@@ -957,8 +1124,8 @@ static void globe_input_frame(const SceCtrlData *pad, unsigned pressed, const pl
     in.down = (pad->buttons & SCE_CTRL_DOWN) != 0;
     in.left = (pad->buttons & SCE_CTRL_LEFT) != 0;
     in.right = (pad->buttons & SCE_CTRL_RIGHT) != 0;
-    in.zoom_in = (pad->buttons & SCE_CTRL_RTRIGGER) != 0;
-    in.zoom_out = (pad->buttons & SCE_CTRL_LTRIGGER) != 0;
+    in.zoom_in = act(pad->buttons, ACT_ZOOM_IN);
+    in.zoom_out = act(pad->buttons, ACT_ZOOM_OUT);
     read_touch(&in);
 
     /* Right stick: one flick, one station. */
@@ -981,16 +1148,20 @@ static void globe_input_frame(const SceCtrlData *pad, unsigned pressed, const pl
             open_place_in_list(cand >= 0 ? cand : A.np_place_idx);
         }
     }
-    if ((pressed & SCE_CTRL_TRIANGLE) && A.np_url[0]) {
+    if (act(pressed, ACT_NEXT_STATION))
+        step_station(1);
+    if (act(pressed, ACT_PREV_STATION))
+        step_station(-1);
+    if (act(pressed, ACT_FAVOURITE) && A.np_url[0]) {
         int si = library_find_url(&A.d->lib, A.np_url);
         if (si >= 0)
             toggle_favourite(si);
     }
-    if (pressed & SCE_CTRL_SQUARE)
+    if (act(pressed, ACT_STOP))
         player_stop();
-    if (pressed & SCE_CTRL_START)
+    if (act(pressed, ACT_MENU))
         open_menu();
-    if (pressed & SCE_CTRL_SELECT)
+    if (act(pressed, ACT_VIEW))
         A.mode = MODE_LIST;
 }
 
@@ -1052,6 +1223,9 @@ int app_update(const SceCtrlData *pad, const player_status *st)
         if (pressed & (SCE_CTRL_CROSS | SCE_CTRL_CIRCLE))
             A.ov = OV_NONE;
         break;
+    case OV_SETTINGS:
+        settings_input(pressed);
+        break;
     case OV_NONE:
         browse_input(pressed);
         break;
@@ -1060,6 +1234,8 @@ int app_update(const SceCtrlData *pad, const player_status *st)
 }
 
 /* ---- drawing ----------------------------------------------------------- */
+
+static int hint_act(int x, int y, ctl_action a, const char *label);
 
 static const char *state_text(const player_status *st, unsigned *col, char *buf, size_t n)
 {
@@ -1126,7 +1302,16 @@ static void draw_tabs(void)
             gfx_rect(x + 8, TABS_Y + TABS_H - 5, w - 16, 3, COL_ACCENT);
         x += w;
     }
-    gfx_text_right(SCREEN_W - MARGIN, TABS_Y + 28, COL_DIM, 15, 0, "L / R");
+    {
+        char keys[32];
+        ctl_button bp = A.ctl.map[ACT_PREV_TAB], bn = A.ctl.map[ACT_NEXT_TAB];
+        if (bp != CB_NONE && bn != CB_NONE)
+            snprintf(keys, sizeof(keys), "%s / %s", ctl_button_label(bp), ctl_button_label(bn));
+        else
+            snprintf(keys, sizeof(keys), "%s", ctl_button_label(bp != CB_NONE ? bp : bn));
+        if (bp != CB_NONE || bn != CB_NONE)
+            gfx_text_right(SCREEN_W - MARGIN, TABS_Y + 28, COL_DIM, 15, 0, keys);
+    }
     gfx_rect(0, TABS_Y + TABS_H - 1, SCREEN_W, 1, COL_PANEL_HI);
 }
 
@@ -1296,10 +1481,10 @@ static void draw_panel(const player_status *st)
         x = gfx_hint(x, PANEL_Y + 56, BTN_CIRCLE, A.depth > 0 ? "Back" : "Cancel");
     if (!A.picking) {
         if (v->kind == ROW_STATION && v->n)
-            x = gfx_hint(x, PANEL_Y + 56, BTN_TRIANGLE, "Favourite");
-        x = gfx_hint(x, PANEL_Y + 56, BTN_SQUARE, "Stop");
-        x = gfx_hint_key(x, PANEL_Y + 56, "START", "Menu");
-        gfx_hint_key(x, PANEL_Y + 56, "SELECT", "Globe");
+            x = hint_act(x, PANEL_Y + 56, ACT_FAVOURITE, "Favourite");
+        x = hint_act(x, PANEL_Y + 56, ACT_STOP, "Stop");
+        x = hint_act(x, PANEL_Y + 56, ACT_MENU, "Menu");
+        hint_act(x, PANEL_Y + 56, ACT_VIEW, "Globe");
     }
 }
 
@@ -1381,7 +1566,7 @@ static void draw_details(const player_status *st, const sys_status *sys)
         gfx_rect(tick - 1, y - 17, 3, 20, COL_ACCENT);
     }
     y += 26;
-    snprintf(buf, sizeof(buf), "Prebuffer %u KB (about %.1f s at 128 kbps)   L / R to change",
+    snprintf(buf, sizeof(buf), "Prebuffer %u KB (about %.1f s at 128 kbps)   Left / Right to change",
              (unsigned)(A.prebuffer / 1024), A.prebuffer / 16000.0);
     gfx_text(64, y, COL_ACCENT, 17, 0, buf);
     y += 26;
@@ -1406,7 +1591,7 @@ static void draw_details(const player_status *st, const sys_status *sys)
 
     {
         int x = 64;
-        x = gfx_hint(x, SCREEN_H - 90, BTN_SQUARE, "Stop");
+        x = hint_act(x, SCREEN_H - 90, ACT_STOP, "Stop");
         gfx_hint(x, SCREEN_H - 90, BTN_CIRCLE, "Close");
     }
 }
@@ -1443,6 +1628,36 @@ static void draw_message(void)
     draw_box(160, 170, 640, 200);
     gfx_text_wrap(184, 220, 592, 28, 4, COL_TEXT, 19, A.message);
     gfx_hint(184, 345, BTN_CROSS, "OK");
+}
+
+/* Hint for an action's current button; nothing if it has none. */
+static int hint_act(int x, int y, ctl_action a, const char *label)
+{
+    ctl_button b = A.ctl.map[a];
+    if (b == CB_NONE)
+        return x;
+    if (b == CB_TRIANGLE)
+        return gfx_hint(x, y, BTN_TRIANGLE, label);
+    if (b == CB_SQUARE)
+        return gfx_hint(x, y, BTN_SQUARE, label);
+    return gfx_hint_key(x, y, ctl_button_label(b), label);
+}
+
+/* One hint for a pair of actions ("L R  Zoom") when both are on key-cap
+ * buttons, otherwise one hint each. */
+static int hint_pair(int x, int y, ctl_action a, ctl_action b, const char *label,
+                     const char *label_a, const char *label_b)
+{
+    ctl_button ba = A.ctl.map[a], bb = A.ctl.map[b];
+    int caps = ba != CB_TRIANGLE && ba != CB_SQUARE && bb != CB_TRIANGLE && bb != CB_SQUARE;
+
+    if (ba != CB_NONE && bb != CB_NONE && caps) {
+        char keys[32];
+        snprintf(keys, sizeof(keys), "%s %s", ctl_button_label(ba), ctl_button_label(bb));
+        return gfx_hint_key(x, y, keys, label);
+    }
+    x = hint_act(x, y, a, label_a);
+    return hint_act(x, y, b, label_b);
 }
 
 static void draw_toast(void)
@@ -1537,12 +1752,118 @@ static void draw_globe_panel(const player_status *st, double now)
     else if (cand >= 0 || playing >= 0)
         x = gfx_hint(x, y, BTN_CROSS, "Stations");
     if (A.np_url[0])
-        x = gfx_hint(x, y, BTN_TRIANGLE, "Favourite");
-    x = gfx_hint(x, y, BTN_SQUARE, "Stop");
-    x = gfx_hint_key(x, y, "L R", "Zoom");
+        x = hint_act(x, y, ACT_FAVOURITE, "Favourite");
+    x = hint_act(x, y, ACT_STOP, "Stop");
+    x = hint_pair(x, y, ACT_ZOOM_OUT, ACT_ZOOM_IN, "Zoom", "Zoom out", "Zoom in");
     x = gfx_hint_key(x, y, "R-STICK", "Station");
-    x = gfx_hint_key(x, y, "START", "Menu");
-    gfx_hint_key(x, y, "SELECT", "List");
+    x = hint_act(x, y, ACT_MENU, "Menu");
+    hint_act(x, y, ACT_VIEW, "List");
+}
+
+static void draw_about(int x0, int y0, int w, int h)
+{
+    int x = x0 + 32, y = y0 + 96;
+
+    gfx_text(x, y, COL_TEXT, 34, 1, "DX Garden");
+    y += 34;
+    gfx_text(x, y, COL_DIM, 19, 0, "Version " DXG_VERSION "   Build " DXG_REVISION);
+    y += 34;
+    gfx_text_wrap(x, y, w - 64, 26, 3, COL_DIM, 17,
+                  "A radio explorer for the PS Vita. It plays streams you supply yourself: "
+                  "no station directory is included or fetched.");
+    y += 86;
+    gfx_rect(x, y - 22, w - 64, 1, COL_PANEL_HI);
+    gfx_text(x, y + 6, COL_DIM, 17, 0, "Made by");
+    gfx_text(x + 140, y + 6, COL_TEXT, 21, 1, "Aisling de Gr\xC3\xA1s");
+    y += 40;
+    gfx_text(x, y, COL_DIM, 17, 0, "Email");
+    gfx_text(x + 140, y, COL_TEXT, 19, 0, "aisling@hiraeth.club");
+    y += 36;
+    gfx_text(x, y, COL_DIM, 17, 0, "Threads");
+    gfx_text(x + 140, y, COL_TEXT, 19, 0, "@hiraeth.clwb");
+    y += 52;
+    gfx_text_wrap(x, y, w - 64, 22, 3, COL_DIM, 15,
+                  "Map data: Natural Earth (public domain). Font: Noto Sans (SIL OFL 1.1). "
+                  "CA certificates: Mozilla (MPL 2.0).");
+    gfx_hint(x0 + 24, y0 + h - 14, BTN_CIRCLE, "Back");
+}
+
+static void draw_settings(void)
+{
+    int x0 = 150, w = 660, y0 = 12, h = SCREEN_H - 24, i;
+    char buf[64];
+
+    draw_box(x0, y0, w, h);
+    if (A.set_about) {
+        gfx_text(x0 + 24, y0 + 36, COL_TEXT, 22, 1, "About");
+        draw_about(x0, y0, w, h);
+        return;
+    }
+    gfx_text(x0 + 24, y0 + 36, COL_TEXT, 22, 1, "Settings");
+    gfx_text_right(x0 + w - 24, y0 + 36, COL_DIM, 15, 0,
+                   "Cross and Circle are fixed; the d-pad and sticks move");
+    for (i = 0; i < SET_ROWS; i++) {
+        int y = y0 + 50 + i * 30, sel = i == A.set_sel;
+        const char *label, *where = "", *value;
+        unsigned vcol = COL_TEXT;
+
+        if (sel)
+            gfx_rect(x0 + 12, y, w - 24, 28, COL_PANEL_HI);
+        if (i < ACT_COUNT) {
+            int c = ctl_action_contexts((ctl_action)i);
+            label = ctl_action_label((ctl_action)i);
+            where = c == (CTX_GLOBE | CTX_LIST) ? "" : c == CTX_GLOBE ? "globe" : "list";
+            if (A.set_capture == i) {
+                value = "Press a button";
+                vcol = COL_ACCENT;
+            } else {
+                value = ctl_button_label(A.ctl.map[i]);
+                if (A.ctl.map[i] == CB_NONE)
+                    vcol = COL_DIM;
+            }
+        } else if (i == SET_STICK) {
+            label = "Stick speed";
+            snprintf(buf, sizeof(buf), "â¹ %d%% âº", A.stick_pct);
+            value = buf;
+        } else if (i == SET_SNAP) {
+            label = "Auto-select reach";
+            if (A.snap_px)
+                snprintf(buf, sizeof(buf), "â¹ %d px âº", A.snap_px);
+            else
+                snprintf(buf, sizeof(buf), "â¹ off âº");
+            value = buf;
+        } else if (i == SET_RESET) {
+            label = "Reset to defaults";
+            value = "";
+        } else {
+            label = "About DX Garden";
+            value = DXG_VERSION;
+            vcol = COL_DIM;
+        }
+        gfx_text(x0 + 32, y + 21, COL_TEXT, 19, sel, label);
+        if (where[0])
+            gfx_text(x0 + 300, y + 21, COL_DIM, 15, 0, where);
+        gfx_text_right(x0 + w - 32, y + 21, vcol, 19, sel, value);
+    }
+    {
+        int x = x0 + 24, y = y0 + h - 14;
+        if (A.set_capture >= 0) {
+            gfx_text(x, y, COL_ACCENT, 17, 0, "Press the new button.");
+            x += gfx_text_width(17, 0, "Press the new button.") + 20;
+            x = gfx_hint(x, y, BTN_CROSS, "None");
+            gfx_hint(x, y, BTN_CIRCLE, "Cancel");
+        } else {
+            if (A.set_sel < ACT_COUNT)
+                x = gfx_hint(x, y, BTN_CROSS, "Change");
+            else if (A.set_sel == SET_RESET)
+                x = gfx_hint(x, y, BTN_CROSS, "Reset");
+            else if (A.set_sel == SET_ABOUT)
+                x = gfx_hint(x, y, BTN_CROSS, "Open");
+            else
+                x = gfx_hint_key(x, y, "LEFT RIGHT", "Adjust");
+            gfx_hint(x, y, BTN_CIRCLE, "Save and close");
+        }
+    }
 }
 
 void app_draw(const player_status *st, const sys_status *sys)
@@ -1560,7 +1881,6 @@ void app_draw(const player_status *st, const sys_status *sys)
         draw_list();
         draw_panel(st);
     }
-    draw_toast();
     switch (A.ov) {
     case OV_MENU:
         draw_menu();
@@ -1574,12 +1894,16 @@ void app_draw(const player_status *st, const sys_status *sys)
     case OV_REPORT:
         draw_report();
         break;
+    case OV_SETTINGS:
+        draw_settings();
+        break;
     case OV_MESSAGE:
         draw_message();
         break;
     case OV_NONE:
         break;
     }
+    draw_toast(); /* on top, so Settings feedback is visible */
     gfx_end();
 }
 
@@ -1591,6 +1915,16 @@ void app_init(app_data *d)
                                          CONFIG_PREBUFFER_KB_DEFAULT, CONFIG_PREBUFFER_KB_MIN,
                                          CONFIG_PREBUFFER_KB_MAX) * 1024;
     player_set_prebuffer(A.prebuffer);
+    A.set_capture = -1;
+    if (ctl_load(&A.ctl, &d->cfg)) {
+        LOG("settings: [buttons] in config.ini had a clash, using the defaults");
+        message("Two actions in config.ini's [buttons] shared a button, so all buttons are "
+                "back to their defaults. Change them in START, then Settings.");
+    }
+    A.stick_pct = config_get_int(&d->cfg, "globe", "stick_speed", CONFIG_STICK_SPEED_DEFAULT,
+                                 CONFIG_STICK_SPEED_MIN, CONFIG_STICK_SPEED_MAX);
+    A.snap_px = config_get_int(&d->cfg, "globe", "snap_px", CONFIG_SNAP_PX_DEFAULT,
+                               CONFIG_SNAP_PX_MIN, CONFIG_SNAP_PX_MAX);
     A.np_place_idx = -1;
     /* Start where the stations are. */
     A.tab = d->lib.n_places ? TAB_COUNTRIES : d->lib.n_unplaced ? TAB_UNPLACED : TAB_COUNTRIES;
@@ -1599,6 +1933,7 @@ void app_init(app_data *d)
     /* Front touch only; the rear touchpad is never enabled. */
     sceTouchSetSamplingState(SCE_TOUCH_PORT_FRONT, SCE_TOUCH_SAMPLING_STATE_START);
     globe_view_init();
+    settings_apply();
     if (globe_view_ready() && d->lib.n_places > 0) {
         /* Open on the globe, turned to the last place played, without
          * starting it: Cross plays it. */

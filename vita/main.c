@@ -4,6 +4,7 @@
 
 #include <curl/curl.h>
 #include <psp2/ctrl.h>
+#include <psp2/kernel/cpu.h>
 #include <psp2/kernel/processmgr.h>
 #include <psp2/kernel/threadmgr.h>
 #include <psp2/net/net.h>
@@ -104,6 +105,13 @@ int main(void)
     fs_mkdir(DATA_DIR);
     log_open(PATH_LOG);
     LOG("DX Garden " DXG_VERSION " starting");
+    /* The main loop keeps core 0; the player threads use cores 1 and 2. */
+    {
+        int rc = sceKernelChangeThreadCpuAffinityMask(sceKernelGetThreadId(),
+                                                      SCE_KERNEL_CPU_MASK_USER_0);
+        if (rc < 0)
+            LOG("main: could not pin to core 0 (0x%08X)", rc);
+    }
     LOG("clocks: ARM %d MHz, bus %d MHz, GPU %d MHz", scePowerGetArmClockFrequency(),
         scePowerGetBusClockFrequency(), scePowerGetGpuClockFrequency());
 
