@@ -171,8 +171,11 @@ static void test_sb_prebuffer_clamp(void)
     sb_free(&sb);
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
+    if (argc > 1)
+        return check_station_files(argc, argv);
+
     test_rb_basic();
     test_rb_wrap_and_full();
     test_rb_byte_stream();
@@ -183,6 +186,8 @@ int main(void)
     run_library_tests();
     run_globe_tests();
     run_controls_tests();
+    run_stationfile_tests();
+    run_bidi_tests();
 
     printf("%d checks, %d failures\n", checks, failures);
     return failures ? 1 : 0;

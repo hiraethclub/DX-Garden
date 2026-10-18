@@ -252,18 +252,23 @@ out:
 }
 
 /* Find or add a group by folded key. Returns its index or -1. */
-static int group_for(group **g, int *n, int *cap, const char *name)
+/* The group for `name` (matched folded), created if new. `index` maps
+ * folded keys to group indices: with thousands of genres a linear search
+ * here made loading take seconds on the Vita. */
+static int group_for(group **g, int *n, int *cap, strmap *index, const char *name)
 {
     char *key = text_fold(name);
     int i;
 
     if (!key)
         return -1;
-    for (i = 0; i < *n; i++) {
-        if (strcmp((*g)[i].key, key) == 0) {
-            free(key);
-            return i;
-        }
+    if (strmap_get(index, key, &i)) {
+        free(key);
+        return i;
+    }
+    if (strmap_put(index, key, *n) != 0) {
+        free(key);
+        return -1;
     }
     if (*n == *cap) {
         int ncap = *cap ? *cap * 2 : 16;
@@ -288,18 +293,25 @@ static int group_for(group **g, int *n, int *cap, const char *name)
 static int build_countries(library *lib)
 {
     int cap = 0, i;
+    strmap index;
 
+    strmap_init(&index);
     for (i = 0; i < lib->n_places; i++) {
         const char *c = lib->places[i].country[0] ? lib->places[i].country : "No country";
-        int gi = group_for(&lib->countries, &lib->n_countries, &cap, c);
+        int gi = group_for(&lib->countries, &lib->n_countries, &cap, &index, c);
         group *g;
-        if (gi < 0)
+        if (gi < 0) {
+            strmap_free(&index);
             return -1;
+        }
         g = &lib->countries[gi];
-        if (push_int(&g->items, &g->n, &g->cap, i) != 0)
+        if (push_int(&g->items, &g->n, &g->cap, i) != 0) {
+            strmap_free(&index);
             return -1;
+        }
         g->n_stations += lib->places[i].n_stations;
     }
+    strmap_free(&index);
     if (lib->n_countries > 1)
         qsort(lib->countries, (size_t)lib->n_countries, sizeof(group), cmp_group);
     for (i = 0; i < lib->n_countries; i++)
@@ -309,28 +321,30 @@ static int build_countries(library *lib)
 
 static int build_genres(library *lib)
 {
-    int cap = 0, i;
+    int cap = 0, i, rc = -1;
+    strmap index;
 
+    strmap_init(&index);
     for (i = 0; i < lib->stations.count; i++) {
         const char *g = lib->stations.items[i].genre;
         while (*g) {
             size_t len = strcspn(g, ",;/");
             char *name = text_trim_dup(g, len);
             if (!name)
-                return -1;
+                goto out;
             if (name[0]) {
-                int gi = group_for(&lib->genres, &lib->n_genres, &cap, name);
+                int gi = group_for(&lib->genres, &lib->n_genres, &cap, &index, name);
                 group *gr;
                 if (gi < 0) {
                     free(name);
-                    return -1;
+                    goto out;
                 }
                 gr = &lib->genres[gi];
                 /* A station listing the same genre twice counts once. */
                 if (gr->n == 0 || gr->items[gr->n - 1] != i)
                     if (push_int(&gr->items, &gr->n, &gr->cap, i) != 0) {
                         free(name);
-                        return -1;
+                        goto out;
                     }
             }
             free(name);
@@ -345,7 +359,10 @@ static int build_genres(library *lib)
         lib->genres[i].n_stations = lib->genres[i].n;
         sort_ints(lib->genres[i].items, lib->genres[i].n, cmp_station_idx);
     }
-    return 0;
+    rc = 0;
+out:
+    strmap_free(&index);
+    return rc;
 }
 
 int library_build(library *lib, station_list *in, load_report *rep)

@@ -3,18 +3,24 @@
 A radio player and explorer for the PS Vita (homebrew, HENkaku/ensō), in the
 spirit of spinning a globe and listening to what's on air somewhere else.
 
-**It plays streams you supply yourself.** No station directory is included,
-bundled or fetched. Stations come from your own `stations.txt`, from M3U/PLS
-files you drop in, or from URLs you type in.
+**It plays streams you supply yourself.** No stations ship with the app,
+and the app never fetches a station directory. Stations come from your own
+`stations.txt`, from M3U/PLS files you drop in, or from URLs you type in.
+
+If you want a ready-made list, a desktop script can build a `stations.txt`
+from a snapshot of [Radio Browser](https://www.radio-browser.info), a
+community station directory. You run it on your computer and copy the file
+to the Vita yourself (see "Building a station list" below).
 
 ## Status
 
-Early development (build 00.10). It plays MP3 streams over HTTP and HTTPS
+Early development (build 00.14). It plays MP3 streams over HTTP and HTTPS
 from your own station list, which you can browse by country, city or genre,
 with favourites and recently played. Imported playlists can be given a place
 in the app. Build 00.07 adds the globe: turn it and stop the crosshair on a
 place to hear it. Buttons other than Cross and Circle can be remapped
-under START, then Settings. Other audio formats come in later milestones
+under START, then Settings. Station names show in Latin, Greek, Cyrillic,
+Arabic, Hebrew, Thai, Georgian, Ethiopic, Chinese, Japanese and Korean. Other audio formats come in later milestones
 (see `NOTES.md`).
 
 ## Building
@@ -40,6 +46,24 @@ The portable core has Linux unit tests:
 cmake -S . -B build-test && cmake --build build-test && ./build-test/dxgarden_test
 ```
 
+## Building a station list (optional)
+
+`tools/rb_to_stations.py` (Python 3.8+, standard library only) downloads
+stations from Radio Browser once and writes a `stations.txt`. Radio Browser
+has no city field, so the script fills it from a GeoNames cities file you
+download first (https://download.geonames.org/export/dump/cities1000.zip),
+falling back to Radio Browser's region (state or province).
+
+```sh
+python3 tools/rb_to_stations.py --geonames cities1000.zip -o stations.txt
+python3 tools/rb_to_stations.py --help   # countries, codecs, bitrate, tag, --max, --check
+```
+
+Copy the result to `ux0:data/dxgarden/stations.txt`. It keeps MP3
+stations by default, since other formats arrive in a later milestone.
+Station data is as good as Radio Browser's: some streams will be dead or
+placed oddly.
+
 ## Files on the Vita
 
 All in `ux0:data/dxgarden/`. They are created on first run if missing.
@@ -57,9 +81,16 @@ All in `ux0:data/dxgarden/`. They are created on first run if missing.
 
 - DX Garden is licensed under the GNU GPL v3 (see `LICENSE`).
 - CA certificates: Mozilla's root store, via curl.se (MPL 2.0).
-- Noto Sans by the Noto Project Authors, SIL Open Font License 1.1
-  (`assets/fonts/OFL.txt`, also shipped in the VPK).
+- Fonts by the Noto Project Authors, SIL Open Font License 1.1
+  (`assets/fonts/OFL.txt`, also shipped in the VPK): Noto Sans, Noto Sans
+  Arabic, Hebrew, Thai, Georgian and Ethiopic, and a subset of Noto Sans
+  CJK SC made by `tools/make_fonts.py`.
+- Text shaping: HarfBuzz (MIT) and FriBidi (LGPL 2.1), linked from VitaSDK's
+  packages.
 - LiveArea art is drawn by `tools/make_livearea.py` for this project.
+- Station lists made with `tools/rb_to_stations.py` come from Radio Browser
+  (radio-browser.info). City names in them come from GeoNames
+  (geonames.org), licensed CC BY 4.0. Neither is included in the app.
 - The globe map (`assets/map/world.png`) is drawn by `tools/make_map.py`
   from [Natural Earth](https://www.naturalearthdata.com) 1:50m data, which
   is in the public domain.

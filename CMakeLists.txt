@@ -12,6 +12,7 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 set(CORE_SOURCES
+    core/bidi_order.c
     core/config.c
     core/controls.c
     core/globe.c
@@ -37,6 +38,7 @@ if(VITA)
         ${CORE_SOURCES}
         vita/app.c
         vita/data.c
+        vita/font.c
         vita/fs.c
         vita/gfx.c
         vita/gfx_fallback.c
@@ -47,6 +49,8 @@ if(VITA)
         vita/player.c
     )
     target_include_directories(dxgarden PRIVATE core "${VITASDK}/arm-vita-eabi/include/freetype2"
+                               "${VITASDK}/arm-vita-eabi/include/harfbuzz"
+                               "${VITASDK}/arm-vita-eabi/include/fribidi"
                                "${CMAKE_BINARY_DIR}/generated")
     # revision.h: the git commit, refreshed on every build (shown in About).
     add_custom_target(dxg_revision
@@ -65,7 +69,7 @@ if(VITA)
         vita2d
         curl mbedtls mbedx509 mbedcrypto zstd
         mpg123
-        freetype bz2 png jpeg z m
+        harfbuzz fribidi freetype bz2 png jpeg z m
         pthread
         SceAppMgr_stub
         SceAppUtil_stub
@@ -98,6 +102,12 @@ if(VITA)
         FILE assets/fonts/NotoSans-Regular.ttf fonts/NotoSans-Regular.ttf
         FILE assets/fonts/NotoSans-Bold.ttf fonts/NotoSans-Bold.ttf
         FILE assets/fonts/OFL.txt fonts/OFL.txt
+        FILE assets/fonts/NotoSansArabic-Regular.ttf fonts/NotoSansArabic-Regular.ttf
+        FILE assets/fonts/NotoSansHebrew-Regular.ttf fonts/NotoSansHebrew-Regular.ttf
+        FILE assets/fonts/NotoSansThai-Regular.ttf fonts/NotoSansThai-Regular.ttf
+        FILE assets/fonts/NotoSansGeorgian-Regular.ttf fonts/NotoSansGeorgian-Regular.ttf
+        FILE assets/fonts/NotoSansEthiopic-Regular.ttf fonts/NotoSansEthiopic-Regular.ttf
+        FILE assets/fonts/NotoSansCJKsc-Subset.otf fonts/NotoSansCJKsc-Subset.otf
         FILE assets/map/world.png map/world.png
         FILE assets/map/lines.bin map/lines.bin
     )
@@ -108,8 +118,12 @@ else()
         tests/test_library.c
         tests/test_globe.c
         tests/test_controls.c
+        tests/test_stationfiles.c
+        tests/test_bidi.c
     )
     target_include_directories(dxgarden_test PRIVATE core)
+    target_compile_definitions(dxgarden_test PRIVATE
+                               DXG_TESTDATA_DIR="${CMAKE_SOURCE_DIR}/testdata")
     target_compile_options(dxgarden_test PRIVATE -Wall -Wextra -Wpedantic -g
                            -fsanitize=address,undefined)
     target_link_options(dxgarden_test PRIVATE -fsanitize=address,undefined)

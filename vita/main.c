@@ -14,6 +14,7 @@
 
 #include "app.h"
 #include "data.h"
+#include "font.h"
 #include "fs.h"
 #include "gfx.h"
 #include "globe_view.h"
@@ -210,10 +211,12 @@ int main(void)
             {
                 gfx_stats g;
                 gfx_take_stats(&g);
+                unsigned shaped, hits;
+                font_stats(&shaped, &hits);
                 LOG("frame: %u frames, avg %.1f ms, worst %.1f ms, draw CPU %.1f ms, "
-                    "glyph atlas %u%% (%u resets)",
+                    "glyph atlas %u%% (%u resets), shaped %u (cache hits %u)",
                     g.frames, (double)g.avg_ms, (double)g.worst_ms, (double)g.draw_ms,
-                    g.atlas_pct, g.atlas_resets);
+                    g.atlas_pct, g.atlas_resets, shaped, hits);
             }
         }
 

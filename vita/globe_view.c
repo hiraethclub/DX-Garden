@@ -27,8 +27,10 @@
 #define STICK_SPEED 700.0 /* px/s at full stick, zoomed in */
 #define ZOOM_RATE 1.7     /* e^1.7 = 5.5x per second of L/R */
 #define SNAP_PX 48.0      /* default: on release, a dot this close is pulled in */
-#define SNAP_AFTER 0.05   /* s of no input before pulling it in */
-#define SNAP_RATE 12.0    /* settles in about a quarter of a second */
+#define SNAP_AFTER 0.2    /* s of no input before pulling a dot in; long
+                           * enough that the stick passing through its
+                           * dead zone mid-movement doesn't trigger it */
+#define SNAP_RATE 8.0     /* settles in about 0.4 s */
 #define FOCUS_RATE 4.2    /* gliding to a place chosen elsewhere */
 
 /* Coastlines and borders fade in between these radii. */
@@ -84,7 +86,32 @@ static struct {
     int prev_id[2];
     float prev_x[2], prev_y[2];
     int ease_place;        /* place being eased onto after focus(), or -1 */
+    int snap_target;       /* dot being pulled onto the crosshair, or -1 */
+    int snap_tried;        /* auto-select already chose (or found none) this pause */
+    gfx_texture dot;       /* a smooth white disc, drawn scaled for each dot */
 } G;
+
+/*
+ * Per-place data for the frame loop. The unit vectors are worked out once
+ * per library (00.12 did double-precision trigonometry for every place,
+ * three times a frame, which stuttered with ~2,800 places). Each frame
+ * then needs three dot products per place.
+ */
+static struct {
+    const library *lib;    /* library these were built for */
+    int n, dirty;
+    float *v;              /* unit vectors, 3 per place */
+    float *sx, *sy;        /* screen position, last projection */
+    unsigned char *vis;    /* on the near side and near the screen */
+} P = { NULL, 0, 1, NULL, NULL, NULL, NULL };
+
+/* Cells of DEDUPE_PX for skipping dots drawn on top of each other. */
+#define DEDUPE_PX 3
+#define DEDUPE_W (SCREEN_W / DEDUPE_PX + 1)
+#define DEDUPE_H (SCREEN_H / DEDUPE_PX + 1)
+static unsigned char dedupe[DEDUPE_W * DEDUPE_H];
+
+static void make_dot_texture(void);
 
 static void unit(double lat, double lon, float *out)
 {
@@ -228,6 +255,7 @@ int globe_view_init(void)
     globe_cam_init(&G.cam, 30, 0, R_START);
     globe_dwell_init(&G.dwell);
     G.ease_place = -1;
+    G.snap_target = -1;
 
     if (L.thid > 0) {
         sceKernelWaitThreadEnd(L.thid, NULL, NULL);
@@ -270,8 +298,106 @@ int globe_view_init(void)
         G.map.w, G.map.h, G.map.mipmapped ? " mipmapped" : "", G.have_lines ? L.line_points : 0,
         L.decode_ms, (unsigned)((t1 - t0) / 1000),
         (unsigned)((sceKernelGetProcessTimeWide() - t1) / 1000));
+    make_dot_texture();
     G.ready = 1;
     return 0;
+}
+
+static void places_free(void)
+{
+    free(P.v);
+    free(P.sx);
+    free(P.sy);
+    free(P.vis);
+    P.v = P.sx = P.sy = NULL;
+    P.vis = NULL;
+    P.n = 0;
+    P.lib = NULL;
+}
+
+static int places_sync(const library *lib)
+{
+    int i;
+    if (!P.dirty && P.lib == lib && P.n == lib->n_places)
+        return P.n;
+    places_free();
+    P.dirty = 0;
+    if (lib->n_places == 0)
+        return 0;
+    P.v = malloc((size_t)lib->n_places * 3 * sizeof(float));
+    P.sx = malloc((size_t)lib->n_places * sizeof(float));
+    P.sy = malloc((size_t)lib->n_places * sizeof(float));
+    P.vis = malloc((size_t)lib->n_places);
+    if (!P.v || !P.sx || !P.sy || !P.vis) {
+        places_free();
+        return 0;
+    }
+    for (i = 0; i < lib->n_places; i++)
+        unit(lib->places[i].lat, lib->places[i].lon, &P.v[i * 3]);
+    P.lib = lib;
+    P.n = lib->n_places;
+    return P.n;
+}
+
+/* Screen positions of all places for the current camera, as globe_project
+ * computes them (the same east/north/centre basis as view_matrix). */
+static void places_project(void)
+{
+    double p0 = G.cam.lat * M_PI / 180.0, l0 = G.cam.lon * M_PI / 180.0;
+    float r = (float)G.cam.radius;
+    float ex = (float)-sin(l0), ey = (float)cos(l0);
+    float nx = (float)(-sin(p0) * cos(l0)), ny = (float)(-sin(p0) * sin(l0)), nz = (float)cos(p0);
+    float cx = (float)(cos(p0) * cos(l0)), cy = (float)(cos(p0) * sin(l0)), cz = (float)sin(p0);
+    int i;
+
+    for (i = 0; i < P.n; i++) {
+        const float *v = &P.v[i * 3];
+        float x, y;
+        if (v[0] * cx + v[1] * cy + v[2] * cz <= 0) {
+            P.vis[i] = 0;
+            continue;
+        }
+        x = GLOBE_CX + r * (v[0] * ex + v[1] * ey);
+        y = GLOBE_CY - r * (v[0] * nx + v[1] * ny + v[2] * nz);
+        P.sx[i] = x;
+        P.sy[i] = y;
+        P.vis[i] = x > -12 && x < SCREEN_W + 12 && y > -12 && y < SCREEN_H + 12;
+    }
+}
+
+/* Nearest projected place within max_px of the crosshair, or -1. */
+static int places_pick(double max_px)
+{
+    float best = (float)(max_px * max_px);
+    int i, pick = -1;
+    for (i = 0; i < P.n; i++) {
+        float dx, dy, d;
+        if (!P.vis[i])
+            continue;
+        dx = P.sx[i] - GLOBE_CX;
+        dy = P.sy[i] - GLOBE_CY;
+        d = dx * dx + dy * dy;
+        if (d <= best) {
+            best = d;
+            pick = i;
+        }
+    }
+    return pick;
+}
+
+static void make_dot_texture(void)
+{
+    enum { S = 64 };
+    static uint32_t px[S * S];
+    int x, y;
+    for (y = 0; y < S; y++)
+        for (x = 0; x < S; x++) {
+            float dx = x + 0.5f - S / 2.0f, dy = y + 0.5f - S / 2.0f;
+            float d = sqrtf(dx * dx + dy * dy), a = (S / 2.0f - 1.0f) - d + 0.5f;
+            unsigned al = a <= 0 ? 0 : a >= 1 ? 255 : (unsigned)(a * 255);
+            px[y * S + x] = (al << 24) | 0x00FFFFFFu;
+        }
+    gfx_texture_from_rgba(&G.dot, px, S, S);
 }
 
 int globe_view_ready(void)
@@ -284,6 +410,8 @@ void globe_view_shutdown(void)
     gfx_texture_free(&G.map);
     gfx_buffer_free(&G.sphere);
     gfx_buffer_free(&G.lines);
+    gfx_texture_free(&G.dot);
+    places_free();
     free(G.tile_cx);
     free(L.tiles);
     G.tile_cx = NULL;
@@ -293,8 +421,10 @@ void globe_view_shutdown(void)
 
 void globe_view_library_changed(void)
 {
+    P.dirty = 1;
     globe_dwell_init(&G.dwell);
     G.ease_place = -1;
+    G.snap_target = -1;
 }
 
 void globe_view_focus(const library *lib, int place, int ease)
@@ -303,6 +433,8 @@ void globe_view_focus(const library *lib, int place, int ease)
         return;
     globe_dwell_force(&G.dwell, place);
     G.vx = G.vy = 0;
+    G.snap_target = -1;
+    G.snap_tried = 1; /* the focus place is the target, not a nearby dot */
     if (ease) {
         G.ease_place = place;
     } else {
@@ -405,6 +537,8 @@ int globe_view_update(const library *lib, const globe_input *in, double now, dou
     if (active) {
         G.last_input = now;
         G.ease_place = -1;
+        G.snap_target = -1;
+        G.snap_tried = 0;
     }
 
     if (G.ease_place >= 0 && G.ease_place < lib->n_places) {
@@ -417,14 +551,25 @@ int globe_view_update(const library *lib, const globe_input *in, double now, dou
         return -1;
     }
 
-    if (!active && snap_px > 0 && G.vx == 0 && G.vy == 0 && now - G.last_input > SNAP_AFTER) {
-        /* Auto-select: pull the nearest dot within reach onto the
-         * crosshair. */
-        int near = globe_pick(&G.cam, lib, snap_px, NULL);
-        if (near >= 0)
-            globe_ease_to(&G.cam, lib->places[near].lat, lib->places[near].lon, SNAP_RATE, dt);
+    places_sync(lib);
+    places_project();
+
+    /* Auto-select: once per pause, choose the nearest dot within reach
+     * and pull it onto the crosshair. The choice is kept until it arrives
+     * (00.13 chose again every frame, so in crowded areas it wobbled
+     * between close dots). */
+    if (!active && !G.snap_tried && snap_px > 0 && G.vx == 0 && G.vy == 0 &&
+        now - G.last_input > SNAP_AFTER) {
+        G.snap_tried = 1;
+        G.snap_target = places_pick(snap_px);
     }
-    candidate = globe_pick(&G.cam, lib, PICK_PX, NULL);
+    if (G.snap_target >= 0 && G.snap_target < lib->n_places) {
+        const place *p = &lib->places[G.snap_target];
+        globe_ease_to(&G.cam, p->lat, p->lon, SNAP_RATE, dt);
+        if (globe_screen_dist(&G.cam, p->lat, p->lon) < 0.5)
+            G.snap_target = -1;
+    }
+    candidate = places_pick(PICK_PX);
 
     return globe_dwell_update(&G.dwell, candidate, now, GLOBE_DWELL_S);
 }
@@ -545,29 +690,60 @@ static void draw_lines(void)
     draw_line_layer(0, RGBA8(104, 126, 150, (unsigned)(220 * a)), m);
 }
 
+static void dot(float x, float y, float r, unsigned col)
+{
+    gfx_vertex *v = gfx_tri_alloc(&G.dot, 6);
+    v[0] = (gfx_vertex){ x - r, y - r, 0, 0, col };
+    v[1] = (gfx_vertex){ x + r, y - r, 1, 0, col };
+    v[2] = (gfx_vertex){ x - r, y + r, 0, 1, col };
+    v[3] = (gfx_vertex){ x + r, y - r, 1, 0, col };
+    v[4] = (gfx_vertex){ x + r, y + r, 1, 1, col };
+    v[5] = (gfx_vertex){ x - r, y + r, 0, 1, col };
+}
+
+static float dot_radius(const place *p)
+{
+    return 3.0f + (p->n_stations > 4 ? 4 : p->n_stations) * 0.5f;
+}
+
 static void draw_dots(const library *lib, int playing, double now)
 {
     int i, cand = G.dwell.candidate;
 
-    for (i = 0; i < lib->n_places; i++) {
-        const place *p = &lib->places[i];
-        double x, y;
-        float sx, sy, r;
-
-        if (!globe_project(&G.cam, p->lat, p->lon, &x, &y))
+    if (!places_sync(lib) || !G.dot.id)
+        return;
+    places_project();
+    memset(dedupe, 0, sizeof(dedupe));
+    for (i = 0; i < P.n; i++) {
+        int cx, cy;
+        unsigned char *cell;
+        if (!P.vis[i] || i == cand || i == playing)
             continue;
-        sx = GLOBE_CX + (float)x;
-        sy = GLOBE_CY + (float)y;
-        if (sx < -10 || sx > SCREEN_W + 10 || sy < -10 || sy > SCREEN_H + 10)
+        cx = (int)P.sx[i] / DEDUPE_PX;
+        cy = (int)P.sy[i] / DEDUPE_PX;
+        if (cx >= 0 && cy >= 0 && cx < DEDUPE_W && cy < DEDUPE_H) {
+            cell = &dedupe[cy * DEDUPE_W + cx];
+            if (*cell)
+                continue; /* another dot is already drawn here */
+            *cell = 1;
+        }
+        dot(P.sx[i], P.sy[i], dot_radius(&lib->places[i]) + 1.5f, COL_DOT_RIM);
+        dot(P.sx[i], P.sy[i], dot_radius(&lib->places[i]), COL_DOT);
+    }
+    /* The playing place and the one under the crosshair, on top. */
+    for (i = 0; i < 2; i++) {
+        int k = i == 0 ? playing : cand;
+        float r;
+        if (k < 0 || k >= P.n || !P.vis[k] || (i == 1 && k == playing))
             continue;
-        r = 3.0f + (p->n_stations > 4 ? 4 : p->n_stations) * 0.5f;
-        if (i == playing) {
+        r = dot_radius(&lib->places[k]);
+        if (k == playing) {
             float pulse = 0.5f + 0.5f * sinf((float)now * 4.0f);
-            gfx_ring(sx, sy, r + 3, r + 7 + 3 * pulse, RGBA8(0xF2, 0xA5, 0x41, 0x90),
+            gfx_ring(P.sx[k], P.sy[k], r + 3, r + 7 + 3 * pulse, RGBA8(0xF2, 0xA5, 0x41, 0x90),
                      RGBA8(0xF2, 0xA5, 0x41, 0x00));
         }
-        gfx_disc(sx, sy, r + 1.5f, COL_DOT_RIM);
-        gfx_disc(sx, sy, r, i == cand || i == playing ? COL_TEXT : COL_DOT);
+        dot(P.sx[k], P.sy[k], r + 1.5f, COL_DOT_RIM);
+        dot(P.sx[k], P.sy[k], r, COL_TEXT);
     }
 }
 

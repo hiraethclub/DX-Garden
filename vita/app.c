@@ -1783,7 +1783,7 @@ static void draw_about(int x0, int y0, int w, int h)
     gfx_text(x + 140, y, COL_TEXT, 19, 0, "@hiraeth.clwb");
     y += 52;
     gfx_text_wrap(x, y, w - 64, 22, 3, COL_DIM, 15,
-                  "Map data: Natural Earth (public domain). Font: Noto Sans (SIL OFL 1.1). "
+                  "Map data: Natural Earth (public domain). Fonts: Noto Sans family (SIL OFL 1.1). "
                   "CA certificates: Mozilla (MPL 2.0).");
     gfx_hint(x0 + 24, y0 + h - 14, BTN_CIRCLE, "Back");
 }

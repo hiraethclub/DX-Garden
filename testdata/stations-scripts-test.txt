@@ -1,0 +1,25 @@
+# DX Garden script test: names and places in the scripts added in 00.12.
+# Every line plays one of the M1 test streams (Radio Paradise MP3); the
+# ?test= tag only keeps the URLs unique.
+# Arabic, right to left, with digits and with Latin mixed in.
+Test إذاعة القرآن الكريم | http://stream.radioparadise.com/mp3-128?test=ar1 | مصر | القاهرة | 30.0444 | 31.2357 | Test
+راديو مصر 88.7 | http://stream.radioparadise.com/mp3-128?test=ar2 | مصر | القاهرة | 30.0444 | 31.2357 | Test
+Radio Sawa راديو سوا | http://stream.radioparadise.com/mp3-128?test=ar3 | الأردن | عمّان | 31.9539 | 35.9106 | Test
+راديو Sawa 101 FM | http://stream.radioparadise.com/mp3-128?test=ar4 | الأردن | عمّان | 31.9539 | 35.9106 | Test
+# Hebrew, right to left, with the gershayim mark.
+גלי צה״ל | http://stream.radioparadise.com/mp3-128?test=he1 | ישראל | תל אביב | 32.0853 | 34.7818 | Test
+# Thai, with vowel and tone marks.
+สถานีวิทยุ ทดสอบ | http://stream.radioparadise.com/mp3-128?test=th1 | ประเทศไทย | กรุงเทพมหานคร | 13.7563 | 100.5018 | Test
+# Chinese, simplified and traditional.
+中国之声 | http://stream.radioparadise.com/mp3-128?test=zh1 | 中国 | 北京 | 39.9042 | 116.4074 | Test
+臺北廣播電臺 | http://stream.radioparadise.com/mp3-128?test=zh2 | 臺灣 | 臺北 | 25.0330 | 121.5654 | Test
+# Japanese: kanji, katakana and hiragana.
+ラジオ日本 テスト | http://stream.radioparadise.com/mp3-128?test=ja1 | 日本 | 東京 | 35.6762 | 139.6503 | Test
+ふくおか らじお | http://stream.radioparadise.com/mp3-128?test=ja2 | 日本 | 福岡 | 33.5904 | 130.4017 | Test
+# Korean (Hangul), with Latin.
+한국방송 KBS 테스트 | http://stream.radioparadise.com/mp3-128?test=ko1 | 대한민국 | 서울 | 37.5665 | 126.9780 | Test
+# Georgian and Ethiopic.
+საქართველოს რადიო | http://stream.radioparadise.com/mp3-128?test=ka1 | საქართველო | თბილისი | 41.7151 | 44.8271 | Test
+የኢትዮጵያ ሬዲዮ | http://stream.radioparadise.com/mp3-128?test=am1 | ኢትዮጵያ | አዲስ አበባ | 9.0300 | 38.7400 | Test
+# Emoji are skipped (no emoji font); the rest of the name should show.
+Test emoji 📻 Radio ✨ | http://stream.radioparadise.com/mp3-128?test=emo | Test | Emoji | -20.0000 | -40.0000 | Test

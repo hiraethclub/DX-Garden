@@ -571,3 +571,253 @@ details move to the START menu only.
   writes `build/generated/revision.h` with the short git commit. It adds
   `-modified` when tracked files have uncommitted changes, so a build made
   from a clean commit shows just the hash.
+
+## Decision: Radio Browser as a desktop snapshot (after 00.11)
+
+- **Decision by the tester:** one directory is allowed, Radio Browser
+  (radio-browser.info), used only as a snapshot. Specifically:
+  - A desktop script, `tools/rb_to_stations.py`, writes a normal
+    `stations.txt`.
+  - The Vita app never contacts Radio Browser.
+  - Nothing from it ships in the VPK.
+  - Radio Garden's API and data stay off-limits.
+  - Any other directory, or any live lookup from the Vita, needs asking
+    first.
+  - CLAUDE.md's "Station data" and "Helper tools" sections now say this.
+- **Radio Browser's data licence (checked 2026-10-18):** no official
+  source names a licence for the data.
+  - The API documentation served by the servers (e.g.
+    de1.api.radio-browser.info) says the service "can be used freely but
+    without guarantee to work".
+  - api.radio-browser.info calls the API "completely free and open
+    source" and says you may "install it on your own server and mirror
+    all its data".
+  - The radiobrowser-api-rust README says "Open source" and "Freely
+    licensed" for the code, without naming a data licence.
+  - The website (a JavaScript app) contains no licence text.
+  - "Public domain" appears only in secondary sources, such as the DOKK
+    wiki entry, with no citation.
+  - Conclusion: free to use and mirror per the project's own words. Public
+    domain is likely but unconfirmed. Low risk here, because the snapshot
+    stays on the user's PC and Vita. If it ever matters, ask the
+    maintainers (GitLab: radiobrowser).
+- **GeoNames licence:** CC BY 4.0, per the official
+  download.geonames.org/export/dump/readme.txt ("This work is licensed
+  under a Creative Commons Attribution 4.0 License"). Attribution is
+  required. It is credited in the generated file header and the README.
+  The cities file is downloaded by the user and never shipped.
+- **How the script works:**
+  - **Server discovery:** DNS lookup of all.api.radio-browser.info, a
+    reverse lookup per address, a random order, and the next server on
+    failure, as the API docs describe.
+  - **User-Agent:** `dxgarden-tools/<VERSION>`.
+  - **Search:** `/json/stations/search` with has_geo_info=true,
+    hidebroken=true, ordered by click count, in pages of 500 with a 1 s
+    pause.
+  - **Skipped:** HLS, lastcheckok false, missing or (0,0) coordinates,
+    unselected codecs, bitrate under the minimum (unknown bitrate counts
+    as under it), unusable or duplicate URLs, and URLs that mention Radio
+    Garden (5 of about 9,000 in a test run carried a
+    `listening-from-radio-garden` parameter).
+  - **Stream URL:** `url_resolved`.
+  - **Cities:** from GeoNames cities15000.
+    - District entries (PPLX) and historical or abandoned places are
+      ignored.
+    - Within 20 km the most populous city wins, so suburbs map to their
+      city. Beyond that, the nearest city within `--city-km` (default
+      30) wins. Otherwise the city is left blank.
+    - The station's own country is preferred.
+  - **Fields:**
+    - Genre is the first one or two tags.
+    - Notes are `CODEC BITRATEk rb:<uuid>`, with `?k` when the bitrate
+      is unknown.
+    - Every field is stripped of `|`, line breaks and control
+      characters.
+    - Names are cut to 100 characters at a word boundary.
+    - A leading `#` is dropped, because the line would otherwise read as
+      a comment.
+    - Long official country names are shortened ("The United States Of
+      America" becomes "United States").
+  - `--check N` probes N random URLs (8 at a time, 10 s timeout) and
+    lists the dead ones.
+- **Tests:**
+  - `tools/test_rb_to_stations.py`: offline unit tests.
+  - `testdata/rb-sample-stations.txt`: 36 real MP3 stations, parsed and
+    grouped in `dxgarden_test` with zero malformed lines.
+  - `dxgarden_test FILE...` checks any generated file and prints
+    timings.
+- **Codec labels seen in a run of about 9,000:** MP3 5,689, AAC+ 1,182,
+  AAC 1,032, OGG 97, no OPUS. Radio Browser seems to list Ogg Opus
+  streams under OGG, so M4 should handle both inside Ogg.
+- **No click reporting.** Radio Browser asks apps to call `/json/url/`
+  for each play, to rank stations. The Vita doesn't contact Radio Browser,
+  so this isn't done. It is a possible later addition only if live
+  lookups are ever allowed.
+
+## How many stations the Vita can handle (estimate, untested)
+
+- **Measured on this PC** (optimised build, real Radio Browser data; the
+  globe column is one frame of place maths, pick plus project):
+
+  | Stations | Places | File size | Parse | Group | Globe maths |
+  |---|---|---|---|---|---|
+  | 500 | 270 | 95 KB | 1 ms | 2 ms | 0.03 ms |
+  | 2,000 | 867 | 373 KB | 3 ms | 16 ms | 0.11 ms |
+  | 8,000 | 2,829 | 1.5 MB | 14 ms | 146 ms | 0.33 ms |
+
+- **Measured on the Vita:** only up to 17 stations and 14 places, so
+  everything below about larger files is a guess.
+- **Guessed Vita speed:** 20-40 times slower than this PC for this kind of
+  code (333 MHz Cortex-A9).
+  - At 2,000 stations: loading in well under a second, and 2-4 ms per
+    frame of place maths on the globe. Probably comfortable.
+  - At 8,000 stations: grouping 3-6 s at start-up and on Reload, and
+    7-13 ms per frame of place maths. On top of drawing about 1,400
+    visible dots (two discs each, through the CPU batch), that probably
+    drops the globe below 60 fps.
+- **The script's default `--max` is 2,000** until a big file has been
+  tried on hardware.
+- **Grouping grows faster than linearly.** Stations without a city are
+  each compared with every place, and Radio Browser data leaves about 5%
+  of stations without a city.
+- **The 8 MB file limit** allows roughly 40,000 stations.
+- **If big files are too slow,** fixes include:
+  - Precomputed unit vectors and float dot products for places on the
+    globe.
+  - Cheaper dots.
+  - A grid index for grouping.
+
+## 00.11 on hardware with 2,000 Radio Browser stations
+
+- 2,000 stations and 990 places loaded in 0.6 s (estimated: under 1 s).
+- The globe held 60 fps zoomed out with every dot, at about 10 ms draw CPU
+  (4.5 ms with 14 places).
+- Quiet frames had a worst of 17.7 ms, so the core pinning in 00.10 worked.
+  Frames around station changes still reach 78-104 ms.
+- 40 stations played. One answered HTTP 401.
+- The tester: "incredible". Cyrillic names showed correctly. Arabic, Chinese
+  and Japanese were missing from the font.
+
+## Build 00.12: text in more scripts
+
+- **Fonts** (all SIL OFL 1.1, from the Noto project):
+  - Noto Sans stays first, in regular and bold.
+  - Fallbacks, regular weight only: Noto Sans Arabic, Hebrew, Thai,
+    Georgian and Ethiopic, plus a subset of Noto Sans CJK SC.
+  - Where bold is wanted in a fallback script, the glyph is thickened in
+    software (`FT_GlyphSlot_Embolden`).
+- **The CJK subset** (`tools/make_fonts.py`), 6.2 MB:
+  - GB 2312 and Big5 level 1 Chinese, JIS X 0208 kanji, all kana, KS X
+    1001 Hangul syllables, CJK punctuation and full-width forms. That is
+    13,302 characters.
+  - Shared characters use the Simplified Chinese style, so a few Japanese
+    kanji look Chinese-style.
+  - The VPK is now 9.9 MB, up from 3.7 MB.
+- **Coverage, checked offline with fontTools:**
+  - All 375 characters of the script test file are covered.
+  - In 8,000 Radio Browser stations, 10 characters are missing, all
+    decorative mathematical Fraktur letters in one name.
+- **Shaping:** HarfBuzz 14.5 (MIT) and FriBidi 1.0.17 (LGPL 2.1), from
+  vdpm.
+  - Text with no right-to-left or shaped characters keeps the old
+    per-character path, with a cache from character to font and glyph.
+  - Text containing Arabic, Hebrew or Thai (or bidi control characters)
+    goes through FriBidi for levels and HarfBuzz for shaping. It is split
+    into runs by level and font, and the runs are put in screen order by
+    `core/bidi_order.c` (rule L2, unit-tested). The result is cached, 128
+    strings.
+- **Emoji and invisible format characters** are skipped (no emoji font).
+  Characters missing from every font show the regular font's box.
+- **Glyph texture** doubled to 2048x1024 (8 MB of video memory), with
+  8,192 cache entries.
+- **Ellipsis cut points** are cached per string, size and width, so long
+  shaped names don't get re-measured every frame.
+- **Frame log** now shows shaping counts and cache hits.
+- **Testing:**
+  - `testdata/stations-scripts-test.txt` has 14 stations named in every
+    new script, including right-to-left text mixed with digits and Latin.
+    `dxgarden_test` checks it parses.
+  - The shaping itself can only be checked on hardware: this PC has no
+    HarfBuzz or FriBidi.
+- **Big-list test file:** `build/stations-00.12-test.txt` has 7,488 MP3
+  stations from Radio Browser (apparently every MP3 station with
+  coordinates) plus the 14 script tests. That is 7,502 stations in 2,781
+  places, 1.4 MB, 0 malformed. Expected on the Vita, a guess: 3-6 s to
+  load, and the globe may drop below 60 fps zoomed out.
+
+## Place names for Radio Browser stations (after 00.12, script only)
+
+- **Tester on the big list:** "a lot of stations that are just coordinates
+  for location". These were stations with no city within 30 km in
+  cities15000, so the app named their places by coordinates. 437 of 7,488
+  stations were affected, mostly in the USA (114) and Canada (63).
+- **Fixes in `tools/rb_to_stations.py`:**
+  - Use GeoNames cities1000 (161,752 towns over 1,000 people). Blanks
+    fall to 102. The "biggest city within 20 km" rule still stops small
+    towns taking over from cities.
+  - If there's still no town, fall back to Radio Browser's `state`
+    (region or province). It is skipped when it just repeats the country
+    or contains digits. That fixes 65 of the 102.
+  - The summary now gives the count for each source.
+- **Result:** 37 of 7,488 stations are still named by coordinates on the
+  Vita, and some of those join a named place within 25 km.
+- No app change: 00.12 stays as it is.
+
+## 00.12 on hardware with 7,488 stations, and build 00.13
+
+- **Tester:** stutters over dense areas (western Europe, North America).
+- **Log** (the tester loaded the 7,488-station MP3 file without the script
+  tests, so shaping wasn't exercised):
+  - **Fonts:** 4.0 s on the main thread for 8 files (8 MB).
+  - **Library:** 7,488 stations and 2,769 places in 4.4 s, within the
+    3-6 s estimate.
+  - **Globe:** 23-32 ms of draw CPU per frame over dense areas, about
+    25 fps.
+  - About 12.6 s from launch to the globe.
+- **Causes:**
+  - Every frame, every place was projected with double-precision
+    trigonometry three times: dots, the crosshair pick and auto-select.
+  - Each visible dot was two 16-segment discs: about 96 vertices, or
+    about 140,000 per frame over ~1,500 dots.
+  - `group_for` found genres and countries by linear search, about 28
+    million string comparisons for 2,147 genres.
+  - `read_file` grew its buffer by doubling, and all fonts were read
+    before vitaGL started.
+- **00.13:**
+  - **Globe:**
+    - Place unit vectors are computed once per library. Each frame
+      projects every place once with float dot products, and the picks
+      reuse that.
+    - Dots are one textured quad each (a 64x64 smooth disc with
+      mipmaps): 12 vertices for dot and rim.
+    - A dot landing in a 3 px cell already used is skipped. The playing
+      and crosshair dots are always drawn last, on top.
+  - **Library:** genre and country groups are found through a hash map.
+    On this PC, grouping 7,488 stations went from 62 ms to 23 ms.
+  - **Files:** `read_file` sizes the buffer from the file and reads it
+    in one go.
+  - **Fonts:** only Noto Sans regular and bold load at start-up. The six
+    other fonts are read on a background thread and switched on by the
+    frame loop when ready, after which the character and shaping caches
+    are cleared.
+- **Expected, unconfirmed:** the globe back near 60 fps over dense areas,
+  library loading around 1.5-2 s, and fonts no longer delaying start-up.
+
+## Build 00.14: calmer auto-select in crowded areas
+
+- **Tester:** the stutter looks like the crosshair trying to lock onto
+  stations in crowded areas.
+- **Likely causes:**
+  - Auto-select started 0.05 s after input stopped, so the stick briefly
+    passing through its dead zone mid-movement could trigger a pull.
+  - It re-chose the nearest dot every frame, so with several dots close
+    together the target could change during the pull.
+  - The pull was fast (rate 12).
+- **00.14:**
+  - Auto-select waits 0.2 s of no input.
+  - It chooses its target once per pause and keeps it until it arrives.
+  - Any input cancels it.
+  - It pulls more gently (rate 8, about 0.4 s).
+  - Focusing a place from elsewhere (list, station step) doesn't also
+    trigger auto-select.
+  - Includes everything in 00.13.

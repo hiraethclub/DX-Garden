@@ -340,6 +340,26 @@ char *read_file(const char *path, size_t max_size, size_t *len, read_status *st)
         *st = READ_MISSING;
         return NULL;
     }
+    /* Size known: one allocation and one read. Large files (fonts, the
+     * station list) were slow to read by doubling a buffer. */
+    if (fseek(f, 0, SEEK_END) == 0) {
+        long size = ftell(f);
+        if (size >= 0 && fseek(f, 0, SEEK_SET) == 0) {
+            if ((size_t)size > max_size) {
+                *st = READ_TOO_BIG;
+                goto fail;
+            }
+            cap = (size_t)size + 1; /* +1 so EOF is seen without growing */
+            buf = malloc(cap + 1);
+            if (!buf) {
+                *st = READ_ERROR;
+                goto fail;
+            }
+        } else {
+            clearerr(f);
+            fseek(f, 0, SEEK_SET);
+        }
+    }
     for (;;) {
         size_t got;
         if (used == cap) {

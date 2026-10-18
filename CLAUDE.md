@@ -12,15 +12,17 @@ I will test every build on real hardware and report back. Work in small mileston
 
 ## Station data (important)
 
-For now, stations come only from my own station file and imports:
+On the Vita, stations come only from my own station file and imports:
 
 - `ux0:data/dxgarden/stations.txt` in a simple documented format: name, stream URL, country, city, latitude, longitude, plus optional genre and notes.
 - M3U/PLS files placed in `ux0:data/dxgarden/import/` (these lack coordinates; let me assign a place to them in the app).
 - Add station by URL with the on-screen keyboard (IME dialog).
 
-Do not bundle, scrape or fetch any station directory, and do not use Radio Garden's own API or data.
+**One directory is allowed, as a desktop snapshot only: Radio Browser (radio-browser.info).** A desktop script (`tools/rb_to_stations.py`) downloads stations from it once and writes a normal `stations.txt`, which I copy to the Vita myself. The Vita app never contacts Radio Browser, and nothing from it ships in the VPK.
 
-Keep all station loading behind a `station_source` interface in `core/` so another source could be added later, but only if I explicitly decide to. If a feature would need a directory, stop and ask me.
+Do not bundle any station list in the VPK, and do not use Radio Garden's own API or data in any form (including entries that point back at Radio Garden). Ask me before using any other directory, and before adding any live lookup from the Vita (including to Radio Browser).
+
+Keep all station loading behind a `station_source` interface in `core/` so another source could be added later, but only if I explicitly decide to. If a feature would need a directory or a live lookup, stop and ask me.
 
 ## Architecture
 
@@ -86,9 +88,10 @@ Any world map or globe texture must be public domain or have a licence that allo
 - `ux0:data/dxgarden/import/`: drop M3U/PLS files here.
 - Create missing files and folders on first run with sensible defaults, plus a commented example `stations.txt`. Never crash on a malformed file.
 
-## Helper tool (desktop, optional, after M3)
+## Helper tools (desktop)
 
-A small cross-platform script (Python is fine) that takes my own list of station names and URLs and helps me add city, country and coordinates, then writes a valid `stations.txt`. It must only work on lists I give it.
+- `tools/rb_to_stations.py`: builds a `stations.txt` from a Radio Browser snapshot, with filters (countries, codecs, bitrate, tag, a station cap). Cities come from a GeoNames cities file on my PC (CC BY 4.0, credited), never shipped in the VPK. Standard library only.
+- Optional, later: a small cross-platform script that takes my own list of station names and URLs and helps me add city, country and coordinates, then writes a valid `stations.txt`. It must only work on lists I give it.
 
 ## How to work with me
 
@@ -96,4 +99,4 @@ A small cross-platform script (Python is fine) that takes my own list of station
 - Before each milestone, give a short plan; after it, give me a test checklist for the Vita.
 - Bump the version number in the VPK each build so I can tell builds apart.
 - If something is uncertain on real hardware (performance, decoder speed, standby behaviour), say so instead of guessing, and suggest how I can test it.
-- Keep the README honest: a player and explorer for user-supplied streams, with no station directory included.
+- Keep the README honest: a player and explorer for user-supplied streams, with no station directory included in the app. A desktop script can build a list from Radio Browser.

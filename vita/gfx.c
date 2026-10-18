@@ -6,55 +6,39 @@
 #include <string.h>
 
 #include <png.h>
-#include <ft2build.h>
-#include FT_FREETYPE_H
-#include FT_SIZES_H
 #include <psp2/kernel/processmgr.h>
 #include <vitaGL.h>
 
+#include "font.h"
 #include "fs.h"
 #include "log.h"
 #include "text.h"
 
-#define FONT_REGULAR "app0:fonts/NotoSans-Regular.ttf"
-#define FONT_BOLD "app0:fonts/NotoSans-Bold.ttf"
-
-/*
- * Text sizes snap to this short list, and each (weight, size) pair has its
- * own FreeType size object. Glyphs are rendered at exactly the size drawn
- * and copied 1:1 to the screen (the lesson from 00.03: scaled glyphs look
- * thin and pick up their neighbours' edges).
- */
-static const int SIZES[] = { 14, 17, 19, 21, 26, 34 };
-#define N_SIZES ((int)(sizeof(SIZES) / sizeof(SIZES[0])))
-
 /*
  * One RGBA texture holds every glyph plus a white block for solid shapes.
- * Glyphs are added on first use with a 1 px gap, packed in shelves. When
- * it fills up, it is cleared at the start of the next frame and refilled
- * as text is drawn (glyphs that don't fit in the current frame are skipped
- * for that frame only).
+ * Glyphs (of any font, at any of the six sizes, see font.c) are added on
+ * first use with a 1 px gap, packed in shelves. When it fills up, it is
+ * cleared at the start of the next frame and refilled as text is drawn
+ * (glyphs that don't fit in the current frame are skipped for that frame
+ * only). 2048x1024 since 00.12, for CJK text.
  */
-#define ATLAS_W 1024
+#define ATLAS_W 2048
 #define ATLAS_H 1024
 #define WHITE_UV_X (2.0f / ATLAS_W)
 #define WHITE_UV_Y (2.0f / ATLAS_H)
-#define GLYPH_SLOTS 4096 /* hash table, power of two */
+#define GLYPH_SLOTS 8192 /* hash table, power of two */
+#define MAX_LINE_GLYPHS 512
 
 typedef struct {
     uint32_t key; /* 0 = empty */
     int16_t x, y, w, h; /* in the atlas; w == 0 for empty glyphs (space) */
-    int16_t left, top, advance;
+    int16_t left, top;
 } glyph;
 
 typedef gfx_vertex vertex;
 
 #define BATCH_VERTS (6 * 2048)
 
-static FT_Library ft;
-static FT_Face faces[2];
-static FT_Size ft_sizes[2][N_SIZES];
-static char *ttf_data[2];
 static GLuint atlas_tex;
 static glyph glyphs[GLYPH_SLOTS];
 static unsigned glyph_count;
@@ -174,25 +158,18 @@ static int atlas_create(void)
     return 0;
 }
 
-static int size_slot(int size)
+/* Finds or renders a glyph. Returns NULL if it can't be stored now. */
+static const glyph *get_glyph(int face, unsigned gid, int slot, int emb)
 {
-    int i;
-    for (i = 0; i < N_SIZES - 1; i++)
-        if (size <= SIZES[i] || size < (SIZES[i] + SIZES[i + 1] + 1) / 2)
-            return i;
-    return N_SIZES - 1;
-}
-
-/* Finds or renders a glyph. Returns NULL only if the table is full. */
-static const glyph *get_glyph(int bold, int slot, uint32_t cp)
-{
-    uint32_t key = (cp << 4) | ((uint32_t)bold << 3) | (uint32_t)slot | 0x80000000u;
-    uint32_t h = (key * 2654435761u) & (GLYPH_SLOTS - 1);
-    FT_Face face = faces[bold];
-    FT_GlyphSlot g;
+    uint32_t key = ((uint32_t)gid << 8) | ((uint32_t)face << 4) | ((uint32_t)slot << 1) |
+                   (uint32_t)(emb ? 1 : 0);
+    uint32_t h;
+    font_bitmap bm;
     glyph *e;
     int w, ht, i, j;
 
+    key = key * 2u + 1u; /* never 0 */
+    h = (key * 2654435761u) & (GLYPH_SLOTS - 1);
     while (glyphs[h].key) {
         if (glyphs[h].key == key)
             return &glyphs[h];
@@ -202,22 +179,17 @@ static const glyph *get_glyph(int bold, int slot, uint32_t cp)
         atlas_full = 1;
         return NULL;
     }
-
-    FT_Activate_Size(ft_sizes[bold][slot]);
-    if (FT_Load_Char(face, cp, FT_LOAD_RENDER | FT_LOAD_TARGET_NORMAL) != 0 &&
-        FT_Load_Char(face, '?', FT_LOAD_RENDER | FT_LOAD_TARGET_NORMAL) != 0)
+    if (font_render(face, gid, slot, emb, &bm) != 0)
         return NULL;
-    g = face->glyph;
-    w = (int)g->bitmap.width;
-    ht = (int)g->bitmap.rows;
+    w = bm.w;
+    ht = bm.h;
     if (w > 64 || ht > 64) /* not expected at these sizes */
         w = ht = 0;
 
     e = &glyphs[h];
     memset(e, 0, sizeof(*e));
-    e->left = (int16_t)g->bitmap_left;
-    e->top = (int16_t)g->bitmap_top;
-    e->advance = (int16_t)((g->advance.x + 32) >> 6);
+    e->left = (int16_t)bm.left;
+    e->top = (int16_t)bm.top;
 
     if (w > 0 && ht > 0) {
         if (shelf_x + w + 1 > ATLAS_W) {
@@ -231,7 +203,7 @@ static const glyph *get_glyph(int bold, int slot, uint32_t cp)
         }
         for (j = 0; j < ht; j++)
             for (i = 0; i < w; i++) {
-                unsigned a = g->bitmap.buffer[j * g->bitmap.pitch + i];
+                unsigned a = bm.buffer[j * bm.pitch + i];
                 upload[j * w + i] = (a << 24) | 0x00FFFFFFu;
             }
         if (batch_tex != atlas_tex) {
@@ -254,76 +226,24 @@ static const glyph *get_glyph(int bold, int slot, uint32_t cp)
     return e;
 }
 
-/* Next code point; invalid bytes come out as '?'. */
-static uint32_t next_cp(const char **sp)
-{
-    const unsigned char *s = (const unsigned char *)*sp;
-    uint32_t c = s[0];
-    int n = c < 0x80 ? 0 : c >= 0xF0 && c < 0xF5 ? 3 : c >= 0xE0 ? 2 : c >= 0xC2 && c < 0xE0 ? 1 : -1;
-    int i;
+/*
+ * Where gfx_text_fit cuts a string, remembered per (string, size, bold,
+ * width): finding the cut measures several prefixes, which for shaped
+ * scripts means shaping each one, every frame, for every visible row.
+ */
+#define FIT_CACHE 128
 
-    if (n < 0) {
-        *sp += 1;
-        return '?';
-    }
-    if (n == 0) {
-        *sp += 1;
-        return c;
-    }
-    c &= 0x3F >> n;
-    for (i = 1; i <= n; i++) {
-        if ((s[i] & 0xC0) != 0x80) {
-            *sp += i;
-            return '?';
-        }
-        c = (c << 6) | (s[i] & 0x3F);
-    }
-    *sp += n + 1;
-    return c;
-}
+typedef struct {
+    uint32_t hash;
+    int16_t max_w;
+    uint8_t slot, bold, used;
+    int cut; /* -1: fits whole */
+    char str[160];
+} fit_entry;
+
+static fit_entry fit_cache[FIT_CACHE];
 
 /* ---------- setup ---------- */
-
-static int load_fonts(void)
-{
-    static const char *const paths[2] = { FONT_REGULAR, FONT_BOLD };
-    int w, i;
-
-    if (FT_Init_FreeType(&ft) != 0)
-        return -1;
-    for (w = 0; w < 2; w++) {
-        read_status st;
-        size_t len;
-        ttf_data[w] = read_file(paths[w], 4 * 1024 * 1024, &len, &st);
-        if (!ttf_data[w])
-            return -1;
-        /* The buffer stays alive for as long as the face uses it. */
-        if (FT_New_Memory_Face(ft, (const FT_Byte *)ttf_data[w], (FT_Long)len, 0, &faces[w]) != 0)
-            return -1;
-        for (i = 0; i < N_SIZES; i++) {
-            if (FT_New_Size(faces[w], &ft_sizes[w][i]) != 0)
-                return -1;
-            FT_Activate_Size(ft_sizes[w][i]);
-            FT_Set_Pixel_Sizes(faces[w], 0, (FT_UInt)SIZES[i]);
-        }
-    }
-    return 0;
-}
-
-static void free_fonts(void)
-{
-    int w;
-    for (w = 0; w < 2; w++) {
-        if (faces[w])
-            FT_Done_Face(faces[w]); /* also frees its sizes */
-        faces[w] = NULL;
-        free(ttf_data[w]);
-        ttf_data[w] = NULL;
-    }
-    if (ft)
-        FT_Done_FreeType(ft);
-    ft = NULL;
-}
 
 gfx_result gfx_init(void)
 {
@@ -331,9 +251,9 @@ gfx_result gfx_init(void)
         LOG("gfx: %s not found", SHACCCG_PATH);
         return GFX_ERR_NO_SHADER_COMPILER;
     }
-    if (load_fonts() != 0) {
+    if (font_init() != 0) {
         LOG("gfx: could not load Noto Sans from app0:fonts/");
-        free_fonts();
+        font_free();
         return GFX_ERR_FONTS;
     }
     /*
@@ -357,7 +277,7 @@ gfx_result gfx_init(void)
 
     if (atlas_create() != 0) {
         LOG("gfx: out of memory for the glyph atlas");
-        free_fonts();
+        font_free();
         return GFX_ERR_INIT;
     }
 
@@ -393,7 +313,7 @@ void gfx_shutdown(void)
 {
     glFinish();
     glDeleteTextures(1, &atlas_tex);
-    free_fonts();
+    font_free();
     /* vitaGL has no shutdown call; the process exit releases the GPU. */
 }
 
@@ -415,6 +335,8 @@ void gfx_begin(void)
         atlas_resets++;
         atlas_clear();
     }
+    if (font_poll())
+        memset(fit_cache, 0, sizeof(fit_cache));
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glBindTexture(GL_TEXTURE_2D, atlas_tex);
     batch_tex = atlas_tex;
@@ -597,6 +519,31 @@ int gfx_texture_from_565(gfx_texture *t, const void *px, int w, int h)
     return 0;
 }
 
+int gfx_texture_from_rgba(gfx_texture *t, const void *px, int w, int h)
+{
+    GLenum err;
+
+    memset(t, 0, sizeof(*t));
+    flush();
+    glGenTextures(1, &t->id);
+    glBindTexture(GL_TEXTURE_2D, t->id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, px);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    while (glGetError() != GL_NO_ERROR)
+        ;
+    glGenerateMipmap(GL_TEXTURE_2D);
+    err = glGetError();
+    t->mipmapped = err == GL_NO_ERROR;
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                    t->mipmapped ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, batch_tex);
+    t->w = w;
+    t->h = h;
+    return 0;
+}
+
 int gfx_texture_load_png(gfx_texture *t, const char *path)
 {
     int w, h, rc;
@@ -751,53 +698,49 @@ static void thick_line(float x0, float y0, float x1, float y1, unsigned col)
 
 void gfx_text(int x, int y, unsigned col, int size, int bold, const char *s)
 {
-    int slot = size_slot(size), pen = x;
+    static font_glyph line[MAX_LINE_GLYPHS];
+    int slot = font_slot(size), width, n, i;
 
-    bold = bold ? 1 : 0;
-    while (*s) {
-        uint32_t cp = next_cp(&s);
-        const glyph *g;
-        if (cp == '\n')
+    n = font_layout(s, slot, bold, line, MAX_LINE_GLYPHS, &width);
+    for (i = 0; i < n; i++) {
+        const font_glyph *fg = &line[i];
+        const glyph *g = get_glyph(fg->face, fg->gid, slot, fg->emb);
+        float x0, y0;
+        if (!g || g->w == 0)
             continue;
-        g = get_glyph(bold, slot, cp);
-        if (!g)
-            continue;
-        if (g->w > 0) {
-            float x0 = (float)(pen + g->left), y0 = (float)(y - g->top);
-            quad(x0, y0, x0 + g->w, y0 + g->h, (float)g->x / ATLAS_W, (float)g->y / ATLAS_H,
-                 (float)(g->x + g->w) / ATLAS_W, (float)(g->y + g->h) / ATLAS_H, col);
-        }
-        pen += g->advance;
+        x0 = (float)(x + ((fg->x + 32) >> 6) + g->left);
+        y0 = (float)(y - ((fg->y + 32) >> 6) - g->top);
+        quad(x0, y0, x0 + g->w, y0 + g->h, (float)g->x / ATLAS_W, (float)g->y / ATLAS_H,
+             (float)(g->x + g->w) / ATLAS_W, (float)(g->y + g->h) / ATLAS_H, col);
     }
 }
 
 int gfx_text_width(int size, int bold, const char *s)
 {
-    int slot = size_slot(size), w = 0;
-
-    bold = bold ? 1 : 0;
-    while (*s) {
-        uint32_t cp = next_cp(&s);
-        const glyph *g;
-        if (cp == '\n')
-            continue;
-        g = get_glyph(bold, slot, cp);
-        if (g)
-            w += g->advance;
-    }
-    return w;
+    int width = 0;
+    if (!s[0])
+        return 0;
+    font_layout(s, font_slot(size), bold, NULL, 0, &width);
+    return width;
 }
 
-void gfx_text_fit(int x, int y, int max_w, unsigned col, int size, int bold, const char *s)
+
+static uint32_t fit_hash(const char *s, int slot, int bold, int max_w)
+{
+    uint32_t h = 2166136261u ^ (uint32_t)(slot * 31 + bold * 7 + max_w * 131);
+    while (*s)
+        h = (h ^ (unsigned char)*s++) * 16777619u;
+    return h;
+}
+
+static int fit_cut(const char *s, int size, int bold, int max_w)
 {
     static const char ell[] = "\xE2\x80\xA6"; /* ellipsis */
     char buf[512];
     size_t lo = 0, hi, best = 0;
 
-    if (gfx_text_width(size, bold, s) <= max_w) {
-        gfx_text(x, y, col, size, bold, s);
-        return;
-    }
+    if (gfx_text_width(size, bold, s) <= max_w)
+        return -1;
     /* Longest prefix (on a UTF-8 boundary) that fits with the ellipsis. */
     hi = strlen(s);
     if (hi > sizeof(buf) - sizeof(ell))
@@ -819,8 +762,42 @@ void gfx_text_fit(int x, int y, int max_w, unsigned col, int size, int bold, con
     }
     while (best > 0 && s[best - 1] == ' ')
         best--;
-    memcpy(buf, s, best);
-    memcpy(buf + best, ell, sizeof(ell));
+    return (int)best;
+}
+
+void gfx_text_fit(int x, int y, int max_w, unsigned col, int size, int bold, const char *s)
+{
+    static const char ell[] = "\xE2\x80\xA6";
+    char buf[512];
+    int slot = font_slot(size), cut;
+    size_t len = strlen(s);
+
+    bold = bold ? 1 : 0;
+    if (len < sizeof(fit_cache[0].str)) {
+        uint32_t h = fit_hash(s, slot, bold, max_w);
+        fit_entry *e = &fit_cache[h & (FIT_CACHE - 1)];
+        if (!(e->used && e->hash == h && e->slot == slot && e->bold == bold &&
+              e->max_w == max_w && strcmp(e->str, s) == 0)) {
+            e->used = 1;
+            e->hash = h;
+            e->slot = (uint8_t)slot;
+            e->bold = (uint8_t)bold;
+            e->max_w = (int16_t)max_w;
+            memcpy(e->str, s, len + 1);
+            e->cut = fit_cut(s, size, bold, max_w);
+        }
+        cut = e->cut;
+    } else {
+        cut = fit_cut(s, size, bold, max_w);
+    }
+    if (cut < 0) {
+        gfx_text(x, y, col, size, bold, s);
+        return;
+    }
+    if ((size_t)cut > sizeof(buf) - sizeof(ell))
+        cut = (int)(sizeof(buf) - sizeof(ell));
+    memcpy(buf, s, (size_t)cut);
+    memcpy(buf + cut, ell, sizeof(ell));
     gfx_text(x, y, col, size, bold, buf);
 }
 

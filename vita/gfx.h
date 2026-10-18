@@ -85,6 +85,8 @@ void gfx_texture_free(gfx_texture *t);
  * decoded buffer is malloc'd RGB565; the caller frees it. */
 void *gfx_png_decode_565(const char *path, int *w, int *h);
 int gfx_texture_from_565(gfx_texture *t, const void *px, int w, int h);
+/* RGBA8 pixels (r, g, b, a bytes), linear filtering with mipmaps. */
+int gfx_texture_from_rgba(gfx_texture *t, const void *px, int w, int h);
 /*
  * Static geometry kept on the GPU, drawn through a 4x4 matrix (column
  * major, as glLoadMatrixf) that maps model space straight to screen

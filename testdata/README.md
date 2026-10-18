@@ -31,3 +31,13 @@ lines. They are not a station list and are not shipped in the VPK.
   and 0 skipped. Berlin has 3 stations, for testing the station arrows.
   Amsterdam and Brussels are close together. Auckland, Suva and Honolulu
   sit near the date line, and Longyearbyen is far north.
+
+## Radio Browser sample (desktop script test)
+
+- `rb-sample-stations.txt`: 36 real MP3 stations written by
+  `tools/rb_to_stations.py --max 36`, from a Radio Browser
+  (radio-browser.info) snapshot taken on 2026-10-18. City names come from
+  GeoNames (geonames.org, CC BY 4.0).
+- `dxgarden_test` parses and groups it, and expects 0 malformed lines.
+- It can also go on the Vita as `stations.txt`. Expect some dead or oddly
+  placed streams: the data is only as good as Radio Browser's.
