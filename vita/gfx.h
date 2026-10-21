@@ -52,6 +52,8 @@ void gfx_begin(void);
 void gfx_end(void); /* also lets system dialogs (IME) draw */
 /* Frame timing since the last call, then resets the counters. */
 void gfx_take_stats(gfx_stats *out);
+/* Clears the frame stats and starts timing from now. */
+void gfx_reset_stats(void);
 
 void gfx_rect(int x, int y, int w, int h, unsigned col);
 void gfx_bar(int x, int y, int w, int h, unsigned pct, unsigned col);

@@ -1,0 +1,9 @@
+# DX Garden M4 test: titles, playlists, errors and reconnects (build 00.15).
+# All under country "Test", spread along the equator in the Atlantic.
+Test: titles (Radio Paradise) | http://stream.radioparadise.com/mp3-128?test=titles | Test | Titles | 0.0000 | -35.0000 | Test | Should show song titles in the top bar
+Test: playlist link | https://www.radioparadise.com/m3u/mp3-128.m3u | Test | Playlist | 0.0000 | -30.0000 | Test | An M3U that points to the MP3 stream: should play
+Test: AAC stream | http://stream.radioparadise.com/aac-128 | Test | AAC | 0.0000 | -25.0000 | Test | Should say it streams AAC and DX Garden only plays MP3
+Test: not found | http://stream.radioparadise.com/no-such-stream | Test | Not found | 0.0000 | -20.0000 | Test | Should say Not found (HTTP 404), no retries
+Test: web page | https://www.radioparadise.com/m3u/mp3-128.pls | Test | Web page | 0.0000 | -15.0000 | Test | Should say the address is a web page
+Test: HLS (France Inter) | https://stream.radiofrance.fr/franceinter/franceinter_hifi.m3u8?id=radiofrance | Test | HLS | 0.0000 | -10.0000 | Test | Should say HLS isn't supported
+Test: no such server | http://no-such-host.invalid/stream | Test | No server | 0.0000 | -5.0000 | Test | Should retry (server not found), then give up after 10 tries

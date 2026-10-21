@@ -362,6 +362,13 @@ void gfx_take_stats(gfx_stats *out)
     st_interval_sum = st_interval_max = st_draw_sum = 0;
 }
 
+void gfx_reset_stats(void)
+{
+    gfx_stats g;
+    gfx_take_stats(&g);
+    last_begin = sceKernelGetProcessTimeWide();
+}
+
 /* ---------- shapes ---------- */
 
 void gfx_rect(int x, int y, int w, int h, unsigned col)

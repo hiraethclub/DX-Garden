@@ -2,6 +2,10 @@
  * Stream player: a network thread (libcurl) fills a stream_buffer, a decode
  * thread (mpg123) drains it into a SceAudio BGM port.
  *
+ * The network thread follows playlist addresses (M3U/PLS/ASX), strips ICY
+ * metadata (track titles) out of the audio, and reconnects with a back-off
+ * when a stream drops, while the buffered audio keeps playing.
+ *
  * All calls are from the UI thread and never block on the network:
  * player_stop() only requests a stop, and player_update() reaps finished
  * threads and starts any stream queued while the old one was stopping.
@@ -18,7 +22,8 @@ typedef enum {
     PLAYER_BUFFERING,
     PLAYER_PLAYING,
     PLAYER_STOPPING,
-    PLAYER_ERROR
+    PLAYER_ERROR,
+    PLAYER_RECONNECTING /* the stream dropped; buffered audio plays on */
 } player_state;
 
 typedef struct {
@@ -39,6 +44,11 @@ typedef struct {
     int layer;
     unsigned decode_load_pct; /* decode CPU time / audio time */
     char error[256];
+    char title[256];          /* now playing (ICY metadata), "" if none */
+    int reconnect_attempt;    /* 0 unless reconnecting */
+    int reconnect_max;
+    unsigned retry_in_s;      /* seconds until the next try */
+    char reconnect_why[128];  /* why it dropped */
 } player_status;
 
 int player_init(size_t ring_capacity);

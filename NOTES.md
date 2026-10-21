@@ -821,3 +821,91 @@ details move to the START menu only.
   - Focusing a place from elsewhere (list, station step) doesn't also
     trigger auto-select.
   - Includes everything in 00.13.
+
+## M4 (trimmed): titles, playlists, errors, reconnects (build 00.15)
+
+- **Decision by the tester:** no other audio formats. Radio Browser's MP3
+  stations (about 71% of them, 7,488 with coordinates) are plenty.
+  - AAC, Ogg/Vorbis and Opus decoding are dropped from M4. They are a
+    possible later addition (faad2 or the hardware decoder for AAC).
+  - Streams in those formats now get a clear message instead of a decoder
+    error.
+- **Titles (ICY metadata):**
+  - Requests send `Icy-MetaData: 1`. When the server replies with
+    `icy-metaint`, `core/icy.c` strips the metadata blocks out of the
+    audio and reports StreamTitle changes. Titles can contain
+    apostrophes, and Latin-1 is converted to UTF-8.
+  - The title shows in the top bar's second line and in Player details,
+    and is logged as `title:`.
+  - Tested on Linux with every chunk split from 1 to 17 bytes.
+- **What a response is** (`core/stream_info.c`), judged from the
+  Content-Type, the URL and the first bytes:
+  - MP3, or unclear: played.
+  - A playlist (M3U, PLS or ASX, including plain URL lists served as
+    octet-stream): read, and its first http(s) URL fetched, up to 3
+    playlists deep.
+  - HLS, other audio (AAC/Ogg/Opus/FLAC by type or by sync bytes), or a
+    web page: stopped with a message, no retries.
+- **Errors:**
+  - HTTP codes get plain messages with the code, such as "Not found:
+    the stream may have moved (HTTP 404)" or "Refused, possibly blocked
+    in your country (HTTP 403)".
+  - curl failures get messages too: DNS, couldn't connect, timeouts,
+    dropped connections, invalid certificate, missing CA bundle, too many
+    redirects, invalid address.
+- **Reconnect:**
+  - Retried: dropped connections, the server ending the stream,
+    timeouts, DNS and connect failures, and HTTP 408, 429 and 5xx.
+  - Not retried: other HTTP 4xx, invalid certificates, unsupported
+    formats.
+  - Back-off of 1, 2, 4 and 8 s, then 15 s, for up to 10 tries (about 2
+    minutes), then an error saying why.
+  - A connection that delivered 256 KB or more resets the count.
+  - The buffer is not ended while reconnecting, so buffered audio plays
+    on and the decoder waits for the new connection. The state shows
+    "Reconnecting in N s (k of 10)" with the reason.
+  - Each attempt goes back to the station's own address, so a playlist
+    gets a fresh target.
+- **Build fix:**
+  - vita-elf-create failed with "segment 1 overlaps", because the code
+    had grown to end 1,416 bytes before the 64 KB boundary where the data
+    segment starts, and the tool needs about 4.3 KB there.
+  - `cmake/vita-gap.ld` (an INSERT linker script) always leaves 8 KB.
+- **Test file:** `testdata/stations-m4-test.txt` has seven "Test" stations
+  along the equator in the Atlantic: titles, a playlist link, AAC, 404,
+  a web page, HLS (France Inter) and a non-existent server.
+  `build/stations-00.15-test.txt` is the big list plus the script and M4
+  test files.
+- **Uncertain on hardware:**
+  - Whether mpg123 resyncs cleanly when a reconnect resumes mid-frame.
+  - How titles from Shoutcast v1 ("ICY 200") servers come through.
+
+## Build 00.16: fixes from the 00.15 test
+
+The 00.15 log showed the test stations working: titles, the playlist link,
+the AAC message, 404, HLS, and DNS retries with back-off. Fixes:
+
+- **Web page at a .pls address:** this was reported as "The playlist has no
+  stream address in it", because the `.pls` in the URL was trusted over
+  `text/html`. Now an HTML reply (by type, or starting with `<!doctype
+  html`/`<html`) is a web page unless its body really is a playlist.
+- **Titles:**
+  - HTML character references are decoded (`&#1040;` → А, `&#x..;`,
+    `&amp;`, `&quot;`, `&apos;`, `&lt;`, `&gt;`, `&nbsp;`). Beu FM sent
+    its Kazakh titles this way.
+  - A UTF-8 byte order mark in a title is dropped (KGRR sent one).
+  - Titles with no letters or digits ("-") are treated as no title.
+- **Frame stats:** the first "worst" frame time (3.2 s) was the startup
+  load counted as one frame. Timing now starts when the main loop does.
+- **Seen, not changed:**
+  - "Cahier de Vacance  la communication…" has two spaces where a
+    character is missing. The server sent either two spaces or a control
+    character; the log can't tell which.
+  - TLS error -0x7200 ("invalid SSL record") on aircast.breaking-bass.ru:8443
+    is most likely a server that doesn't speak TLS on that port. It is
+    retried; the message is mbedTLS's own wording.
+  - Some Radio Browser entries have wrong coordinates or countries (a
+    Chinese station in the Atlantic, a Turkish one in Burkina Faso). That
+    is the source data, not the app.
+- **Still untested:** reconnecting after a real drop mid-stream (no stream
+  dropped during the test), and mpg123's resync when that happens.

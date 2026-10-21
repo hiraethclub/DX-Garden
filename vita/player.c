@@ -2,6 +2,7 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 
@@ -12,8 +13,10 @@
 #include <psp2/kernel/cpu.h>
 #include <psp2/kernel/threadmgr.h>
 
+#include "icy.h"
 #include "log.h"
 #include "stream_buffer.h"
+#include "stream_info.h"
 
 #define GRAIN 1024        /* samples per sceAudioOutOutput call */
 #define READ_CHUNK 4096   /* compressed bytes per decoder read */
@@ -23,6 +26,9 @@
 #define THREAD_PRIO_DEFAULT 0x10000100
 #define NET_STACK (512 * 1024) /* mbedTLS handshakes are stack hungry */
 #define DEC_STACK (256 * 1024)
+#define PLAYLIST_MAX (64 * 1024)   /* largest playlist body read */
+#define PLAYLIST_DEPTH 3           /* playlists pointing at playlists */
+#define STABLE_BYTES (256 * 1024)  /* a connection this long resets the retry count */
 
 typedef struct {
     SceKernelLwMutexWork lock;
@@ -41,10 +47,23 @@ typedef struct {
     size_t pending_prebuffer;
 
     CURL *curl;
-    int connected;
+    int connected;     /* this connection has sent a reply */
     long http_status;
     char content_type[64];
     char icy_name[96];
+    char cur_url[512]; /* what is being fetched (a playlist's target, say) */
+    char title[ICY_TITLE_MAX]; /* now playing, from ICY metadata */
+    int reconnecting;  /* attempt number while reconnecting, else 0 */
+    SceUInt64 retry_at;
+    char reconnect_why[128];
+
+    /* Network-thread only, per connection. */
+    size_t metaint;
+    int mode;          /* MODE_* below, decided by the first data */
+    char fatal[256];   /* set by callbacks: don't retry, show this */
+    char *plbuf;
+    size_t pl_len;
+    uint64_t conn_bytes;
 
     long rate;
     int channels;
@@ -86,76 +105,166 @@ static void set_error(const char *fmt, ...)
 
 /* ---- network thread ---------------------------------------------------- */
 
+enum { MODE_UNDECIDED, MODE_AUDIO, MODE_PLAYLIST, MODE_REFUSED };
+
+static icy_demux icy;                       /* network thread only */
+static unsigned char demux_out[16 * 1024];
+
+/* Copies a header value (after "name:") without spaces or line ends. */
+static void header_value(const char *v, size_t n, char *out, size_t outn)
+{
+    while (n && (*v == ' ' || *v == '\t')) {
+        v++;
+        n--;
+    }
+    while (n && (v[n - 1] == '\r' || v[n - 1] == '\n' || v[n - 1] == ' '))
+        n--;
+    if (n >= outn)
+        n = outn - 1;
+    memcpy(out, v, n);
+    out[n] = '\0';
+}
+
 static size_t on_header(char *buf, size_t size, size_t nmemb, void *ud)
 {
     size_t len = size * nmemb;
-    static const char key[] = "icy-name:";
+    char val[96];
     (void)ud;
 
-    if (len > sizeof(key) - 1 && strncasecmp(buf, key, sizeof(key) - 1) == 0) {
-        const char *v = buf + sizeof(key) - 1;
-        size_t n = len - (sizeof(key) - 1);
-        while (n && (*v == ' ' || *v == '\t')) {
-            v++;
-            n--;
-        }
-        while (n && (v[n - 1] == '\r' || v[n - 1] == '\n' || v[n - 1] == ' '))
-            n--;
-        if (n >= sizeof(P.icy_name))
-            n = sizeof(P.icy_name) - 1;
+    /* Each response (redirects included) starts with a status line. */
+    if (len > 5 && (strncasecmp(buf, "HTTP/", 5) == 0 || strncasecmp(buf, "ICY ", 4) == 0)) {
+        P.metaint = 0;
+    } else if (len > 9 && strncasecmp(buf, "icy-name:", 9) == 0) {
+        header_value(buf + 9, len - 9, val, sizeof(val));
         lock();
-        memcpy(P.icy_name, v, n);
-        P.icy_name[n] = '\0';
+        snprintf(P.icy_name, sizeof(P.icy_name), "%s", val);
         unlock();
+    } else if (len > 12 && strncasecmp(buf, "icy-metaint:", 12) == 0) {
+        long m;
+        header_value(buf + 12, len - 12, val, sizeof(val));
+        m = strtol(val, NULL, 10);
+        P.metaint = m > 0 && m < 1024 * 1024 ? (size_t)m : 0;
     }
     return len;
 }
 
+/* First data of a connection: log it and decide what it is. Lock held. */
+static void first_data(const unsigned char *buf, size_t n)
+{
+    char *ct = NULL, *eff = NULL, format[16];
+    curl_off_t dns = 0, tcp = 0, tls = 0, first = 0;
+    long redirects = 0;
+    stream_kind kind;
+
+    P.connected = 1;
+    curl_easy_getinfo(P.curl, CURLINFO_RESPONSE_CODE, &P.http_status);
+    curl_easy_getinfo(P.curl, CURLINFO_CONTENT_TYPE, &ct);
+    snprintf(P.content_type, sizeof(P.content_type), "%s", ct ? ct : "");
+    LOG("connected: HTTP %ld, type '%s', name '%s', metadata every %u bytes", P.http_status,
+        P.content_type, P.icy_name, (unsigned)P.metaint);
+    /* Where the time to first byte went, in ms. */
+    curl_easy_getinfo(P.curl, CURLINFO_NAMELOOKUP_TIME_T, &dns);
+    curl_easy_getinfo(P.curl, CURLINFO_CONNECT_TIME_T, &tcp);
+    curl_easy_getinfo(P.curl, CURLINFO_APPCONNECT_TIME_T, &tls);
+    curl_easy_getinfo(P.curl, CURLINFO_STARTTRANSFER_TIME_T, &first);
+    curl_easy_getinfo(P.curl, CURLINFO_REDIRECT_COUNT, &redirects);
+    curl_easy_getinfo(P.curl, CURLINFO_EFFECTIVE_URL, &eff);
+    LOG("timing: dns %lld ms, tcp %lld ms, tls %lld ms, first byte %lld ms, redirects %ld",
+        (long long)dns / 1000, (long long)tcp / 1000, (long long)tls / 1000,
+        (long long)first / 1000, redirects);
+    if (redirects && eff)
+        LOG("redirected to %s", eff);
+
+    kind = stream_classify(P.content_type, eff ? eff : P.cur_url, buf, n, format, sizeof(format));
+    switch (kind) {
+    case SK_MP3:
+    case SK_UNKNOWN:
+        P.mode = MODE_AUDIO;
+        icy_init(&icy, P.metaint);
+        P.reconnecting = 0;
+        break;
+    case SK_PLAYLIST:
+        P.mode = MODE_PLAYLIST;
+        LOG("net: the address is a playlist, reading it");
+        break;
+    case SK_HLS:
+        P.mode = MODE_REFUSED;
+        snprintf(P.fatal, sizeof(P.fatal),
+                 "This station uses HLS (segmented streaming), which DX Garden doesn't play");
+        break;
+    case SK_OTHER:
+        P.mode = MODE_REFUSED;
+        snprintf(P.fatal, sizeof(P.fatal),
+                 "This station streams %s; DX Garden only plays MP3", format);
+        break;
+    case SK_HTML:
+        P.mode = MODE_REFUSED;
+        snprintf(P.fatal, sizeof(P.fatal), "That address is a web page, not a stream");
+        break;
+    }
+}
+
+/* Audio into the stream buffer, waiting for space. Lock held; returns 0 if
+ * stopped. */
+static int push_audio(const unsigned char *a, size_t n)
+{
+    size_t done = 0;
+    while (done < n && !P.stop) {
+        size_t k = sb_write(&P.sb, a + done, n - done);
+        done += k;
+        if (k)
+            sceKernelSignalLwCond(&P.data_cond);
+        if (done < n)
+            sceKernelWaitLwCond(&P.space_cond, NULL);
+    }
+    return !P.stop;
+}
+
 static size_t on_data(char *buf, size_t size, size_t nmemb, void *ud)
 {
-    size_t total = size * nmemb, done = 0;
-    int stopped;
+    size_t total = size * nmemb, off = 0;
+    int ok = 1;
     (void)ud;
 
     lock();
-    if (!P.connected) {
-        char *ct = NULL;
-        P.connected = 1;
-        curl_easy_getinfo(P.curl, CURLINFO_RESPONSE_CODE, &P.http_status);
-        curl_easy_getinfo(P.curl, CURLINFO_CONTENT_TYPE, &ct);
-        snprintf(P.content_type, sizeof(P.content_type), "%s", ct ? ct : "");
-        LOG("connected: HTTP %ld, type '%s', name '%s'", P.http_status,
-            P.content_type, P.icy_name);
-        {
-            /* Where the time to first byte went, in ms. */
-            curl_off_t dns = 0, tcp = 0, tls = 0, first = 0;
-            long redirects = 0;
-            char *eff = NULL;
-            curl_easy_getinfo(P.curl, CURLINFO_NAMELOOKUP_TIME_T, &dns);
-            curl_easy_getinfo(P.curl, CURLINFO_CONNECT_TIME_T, &tcp);
-            curl_easy_getinfo(P.curl, CURLINFO_APPCONNECT_TIME_T, &tls);
-            curl_easy_getinfo(P.curl, CURLINFO_STARTTRANSFER_TIME_T, &first);
-            curl_easy_getinfo(P.curl, CURLINFO_REDIRECT_COUNT, &redirects);
-            curl_easy_getinfo(P.curl, CURLINFO_EFFECTIVE_URL, &eff);
-            LOG("timing: dns %lld ms, tcp %lld ms, tls %lld ms, first byte %lld ms, "
-                "redirects %ld", (long long)dns / 1000, (long long)tcp / 1000,
-                (long long)tls / 1000, (long long)first / 1000, redirects);
-            if (redirects && eff)
-                LOG("redirected to %s", eff);
+    if (P.mode == MODE_UNDECIDED)
+        first_data((const unsigned char *)buf, total);
+    P.conn_bytes += total;
+
+    if (P.mode == MODE_PLAYLIST) {
+        if (P.pl_len + total > PLAYLIST_MAX) {
+            snprintf(P.fatal, sizeof(P.fatal), "The playlist is too large to read");
+            ok = 0;
+        } else {
+            char *nb = realloc(P.plbuf, P.pl_len + total + 1);
+            if (!nb) {
+                ok = 0;
+            } else {
+                P.plbuf = nb;
+                memcpy(P.plbuf + P.pl_len, buf, total);
+                P.pl_len += total;
+            }
         }
+    } else if (P.mode == MODE_REFUSED) {
+        ok = 0;
+    } else {
+        while (ok && off < total) {
+            size_t chunk = total - off < sizeof(demux_out) ? total - off : sizeof(demux_out);
+            size_t a = icy_feed(&icy, (const unsigned char *)buf + off, chunk, demux_out);
+            off += chunk;
+            if (icy.title_changed) {
+                icy.title_changed = 0;
+                memcpy(P.title, icy.title, sizeof(P.title));
+                LOG("title: %s", P.title[0] ? P.title : "(none)");
+            }
+            ok = push_audio(demux_out, a);
+        }
+        if (P.stop)
+            ok = 0;
     }
-    while (done < total && !P.stop) {
-        size_t n = sb_write(&P.sb, buf + done, total - done);
-        done += n;
-        if (n)
-            sceKernelSignalLwCond(&P.data_cond);
-        if (done < total)
-            sceKernelWaitLwCond(&P.space_cond, NULL);
-    }
-    stopped = P.stop;
     unlock();
     /* Returning less than `total` makes curl abort the transfer. */
-    return stopped ? 0 : total;
+    return ok ? total : 0;
 }
 
 static int on_progress(void *ud, curl_off_t dt, curl_off_t dn, curl_off_t ut,
@@ -170,11 +279,149 @@ static int on_progress(void *ud, curl_off_t dt, curl_off_t dn, curl_off_t ut,
     return stopped;
 }
 
-static int net_thread(SceSize args, void *argp)
+typedef enum { OUT_STOPPED, OUT_PLAYLIST, OUT_DROPPED, OUT_FATAL } outcome;
+
+/* One request for P.cur_url. Puts a message in `msg` for DROPPED/FATAL and
+ * the next URL in `next` for PLAYLIST. */
+static outcome fetch_once(CURL *c, char *msg, size_t mn, char *next, size_t nn)
 {
     char errbuf[CURL_ERROR_SIZE] = "";
-    CURL *c;
+    struct curl_slist *hdrs = curl_slist_append(NULL, "Icy-MetaData: 1");
     CURLcode rc;
+    long code = 0;
+    outcome out;
+
+    lock();
+    P.connected = 0;
+    P.mode = MODE_UNDECIDED;
+    P.fatal[0] = '\0';
+    P.metaint = 0;
+    P.conn_bytes = 0;
+    free(P.plbuf);
+    P.plbuf = NULL;
+    P.pl_len = 0;
+    unlock();
+
+    curl_easy_setopt(c, CURLOPT_URL, P.cur_url);
+    curl_easy_setopt(c, CURLOPT_USERAGENT, USER_AGENT);
+    curl_easy_setopt(c, CURLOPT_HTTPHEADER, hdrs);
+    curl_easy_setopt(c, CURLOPT_ERRORBUFFER, errbuf);
+    curl_easy_setopt(c, CURLOPT_NOSIGNAL, 1L);
+    curl_easy_setopt(c, CURLOPT_CAINFO, CA_BUNDLE);
+    curl_easy_setopt(c, CURLOPT_HTTP_VERSION, (long)CURL_HTTP_VERSION_1_1);
+    curl_easy_setopt(c, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(c, CURLOPT_MAXREDIRS, 5L);
+    curl_easy_setopt(c, CURLOPT_FAILONERROR, 1L);
+    curl_easy_setopt(c, CURLOPT_CONNECTTIMEOUT, 15L);
+    /* A live stream that sends nothing for 20 s is treated as dropped. */
+    curl_easy_setopt(c, CURLOPT_LOW_SPEED_LIMIT, 1L);
+    curl_easy_setopt(c, CURLOPT_LOW_SPEED_TIME, 20L);
+    curl_easy_setopt(c, CURLOPT_TCP_KEEPALIVE, 1L);
+    curl_easy_setopt(c, CURLOPT_HEADERFUNCTION, on_header);
+    curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, on_data);
+    curl_easy_setopt(c, CURLOPT_XFERINFOFUNCTION, on_progress);
+    curl_easy_setopt(c, CURLOPT_NOPROGRESS, 0L);
+
+    LOG("net: GET %s", P.cur_url);
+    rc = curl_easy_perform(c);
+    curl_easy_setopt(c, CURLOPT_HTTPHEADER, NULL);
+    curl_slist_free_all(hdrs);
+    curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &code);
+    LOG("net: finished, curl code %d, %llu bytes", (int)rc, (unsigned long long)P.conn_bytes);
+
+    lock();
+    msg[0] = '\0';
+    if (P.stop) {
+        out = OUT_STOPPED;
+    } else if (P.fatal[0]) {
+        snprintf(msg, mn, "%s", P.fatal);
+        out = OUT_FATAL;
+    } else if (P.mode == MODE_PLAYLIST && rc == CURLE_OK) {
+        int r = P.plbuf ? (P.plbuf[P.pl_len] = '\0', playlist_first_url(P.plbuf, P.pl_len, next, nn))
+                        : 0;
+        if (r == 1) {
+            out = OUT_PLAYLIST;
+        } else {
+            snprintf(msg, mn, r < 0 ? "The playlist is an HLS stream, which DX Garden doesn't play"
+                                    : "The playlist has no stream address in it");
+            out = OUT_FATAL;
+        }
+    } else if (rc == CURLE_HTTP_RETURNED_ERROR) {
+        http_status_message(code, msg, mn);
+        out = http_status_retry(code) ? OUT_DROPPED : OUT_FATAL;
+    } else {
+        out = OUT_DROPPED;
+        switch (rc) {
+        case CURLE_OK:
+            snprintf(msg, mn, "The server ended the stream");
+            break;
+        case CURLE_COULDNT_RESOLVE_HOST:
+            snprintf(msg, mn, "Server not found (DNS): check Wi-Fi and the address");
+            break;
+        case CURLE_COULDNT_CONNECT:
+            snprintf(msg, mn, "Couldn't connect to the server");
+            break;
+        case CURLE_OPERATION_TIMEDOUT:
+            snprintf(msg, mn, P.connected ? "No data from the server for 20 s"
+                                          : "No answer from the server");
+            break;
+        case CURLE_RECV_ERROR:
+        case CURLE_SEND_ERROR:
+        case CURLE_PARTIAL_FILE:
+        case CURLE_GOT_NOTHING:
+            snprintf(msg, mn, "The connection dropped");
+            break;
+        case CURLE_PEER_FAILED_VERIFICATION:
+            snprintf(msg, mn, "The server's security certificate isn't valid");
+            out = OUT_FATAL;
+            break;
+        case CURLE_SSL_CACERT_BADFILE:
+            snprintf(msg, mn, "Can't check secure servers: app0:cacert.pem is missing");
+            out = OUT_FATAL;
+            break;
+        case CURLE_TOO_MANY_REDIRECTS:
+            snprintf(msg, mn, "Too many redirects");
+            out = OUT_FATAL;
+            break;
+        case CURLE_UNSUPPORTED_PROTOCOL:
+        case CURLE_URL_MALFORMAT:
+            snprintf(msg, mn, "The stream address isn't valid");
+            out = OUT_FATAL;
+            break;
+        default:
+            snprintf(msg, mn, "%s%s%s", curl_easy_strerror(rc), errbuf[0] ? ": " : "", errbuf);
+            break;
+        }
+    }
+    free(P.plbuf);
+    P.plbuf = NULL;
+    P.pl_len = 0;
+    unlock();
+    return out;
+}
+
+/* Sleeps up to ms, waking early on stop. Returns 0 if stopped. */
+static int wait_or_stop(unsigned ms)
+{
+    unsigned waited = 0;
+    while (waited < ms) {
+        int stopped;
+        lock();
+        stopped = P.stop;
+        unlock();
+        if (stopped)
+            return 0;
+        sceKernelDelayThread(100 * 1000);
+        waited += 100;
+    }
+    return 1;
+}
+
+static int net_thread(SceSize args, void *argp)
+{
+    char msg[256], next[512];
+    int attempt = 0, depth = 0;
+    CURL *c;
     (void)args; (void)argp;
 
     c = curl_easy_init();
@@ -187,47 +434,68 @@ static int net_thread(SceSize args, void *argp)
         unlock();
         return 0;
     }
-
     lock();
     P.curl = c;
+    snprintf(P.cur_url, sizeof(P.cur_url), "%s", P.url);
     unlock();
 
-    curl_easy_setopt(c, CURLOPT_URL, P.url);
-    curl_easy_setopt(c, CURLOPT_USERAGENT, USER_AGENT);
-    curl_easy_setopt(c, CURLOPT_ERRORBUFFER, errbuf);
-    curl_easy_setopt(c, CURLOPT_NOSIGNAL, 1L);
-    curl_easy_setopt(c, CURLOPT_CAINFO, CA_BUNDLE);
-    curl_easy_setopt(c, CURLOPT_HTTP_VERSION, (long)CURL_HTTP_VERSION_1_1);
-    curl_easy_setopt(c, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(c, CURLOPT_MAXREDIRS, 5L);
-    curl_easy_setopt(c, CURLOPT_FAILONERROR, 1L);
-    curl_easy_setopt(c, CURLOPT_CONNECTTIMEOUT, 15L);
-    /* A live stream that sends nothing for 20 s is treated as dead. */
-    curl_easy_setopt(c, CURLOPT_LOW_SPEED_LIMIT, 1L);
-    curl_easy_setopt(c, CURLOPT_LOW_SPEED_TIME, 20L);
-    curl_easy_setopt(c, CURLOPT_TCP_KEEPALIVE, 1L);
-    curl_easy_setopt(c, CURLOPT_HEADERFUNCTION, on_header);
-    curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, on_data);
-    curl_easy_setopt(c, CURLOPT_XFERINFOFUNCTION, on_progress);
-    curl_easy_setopt(c, CURLOPT_NOPROGRESS, 0L);
+    for (;;) {
+        outcome o = fetch_once(c, msg, sizeof(msg), next, sizeof(next));
 
-    LOG("net: GET %s", P.url);
-    rc = curl_easy_perform(c);
+        if (o == OUT_STOPPED)
+            break;
+        if (o == OUT_PLAYLIST) {
+            if (++depth > PLAYLIST_DEPTH) {
+                lock();
+                set_error("Playlists point to more playlists; giving up");
+                unlock();
+                break;
+            }
+            LOG("net: playlist points to %s", next);
+            lock();
+            snprintf(P.cur_url, sizeof(P.cur_url), "%s", next);
+            unlock();
+            continue;
+        }
+        if (o == OUT_FATAL) {
+            lock();
+            set_error("%s", msg);
+            unlock();
+            break;
+        }
+        /* Dropped: try again after a pause, while the buffer plays on. A
+         * connection that ran for a while starts the count again. */
+        if (P.conn_bytes >= STABLE_BYTES)
+            attempt = 0;
+        if (++attempt > RECONNECT_MAX_ATTEMPTS) {
+            lock();
+            set_error("%s (gave up after %d tries)", msg, RECONNECT_MAX_ATTEMPTS);
+            unlock();
+            break;
+        }
+        {
+            unsigned delay = reconnect_delay_ms(attempt);
+            LOG("net: %s; reconnecting in %u s (attempt %d of %d)", msg, delay / 1000, attempt,
+                RECONNECT_MAX_ATTEMPTS);
+            lock();
+            P.reconnecting = attempt;
+            P.retry_at = sceKernelGetProcessTimeWide() + (SceUInt64)delay * 1000;
+            snprintf(P.reconnect_why, sizeof(P.reconnect_why), "%s", msg);
+            unlock();
+            if (!wait_or_stop(delay))
+                break;
+        }
+        /* Reconnect to the station's own address, which may have been a
+         * playlist with a fresh target. */
+        depth = 0;
+        lock();
+        snprintf(P.cur_url, sizeof(P.cur_url), "%s", P.url);
+        unlock();
+    }
 
     lock();
-    if (!P.user_stop) {
-        long code = 0;
-        curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &code);
-        if (rc == CURLE_OK)
-            set_error("Server closed the stream");
-        else if (rc == CURLE_HTTP_RETURNED_ERROR)
-            set_error("HTTP %ld from server", code);
-        else if (rc != CURLE_WRITE_ERROR && rc != CURLE_ABORTED_BY_CALLBACK)
-            set_error("%s%s%s", curl_easy_strerror(rc), errbuf[0] ? ": " : "",
-                      errbuf);
-    }
-    LOG("net: finished, curl code %d", (int)rc);
     P.curl = NULL;
+    P.reconnecting = 0;
     sb_set_eof(&P.sb);
     P.net_done = 1;
     sceKernelSignalLwCondAll(&P.data_cond);
@@ -423,6 +691,8 @@ static void start_session(const char *url, size_t prebuffer)
     P.connected = 0;
     P.http_status = 0;
     P.content_type[0] = P.icy_name[0] = P.error[0] = '\0';
+    P.title[0] = P.reconnect_why[0] = '\0';
+    P.reconnecting = 0;
     P.rate = 0;
     P.channels = P.bitrate_kbps = P.mpeg_version = P.layer = 0;
     P.decode_us = P.samples_out = 0;
@@ -532,6 +802,8 @@ void player_get_status(player_status *s)
         s->state = P.error[0] ? PLAYER_ERROR : PLAYER_IDLE;
     else if (P.stop)
         s->state = P.user_stop ? PLAYER_STOPPING : PLAYER_ERROR;
+    else if (P.reconnecting)
+        s->state = PLAYER_RECONNECTING;
     else if (!P.connected)
         s->state = PLAYER_CONNECTING;
     else if (sb_get_state(&P.sb) == SB_BUFFERING)
@@ -557,6 +829,15 @@ void player_get_status(player_status *s)
     if (P.samples_out && P.rate)
         s->decode_load_pct = (unsigned)(P.decode_us * P.rate / 10000 / P.samples_out);
     memcpy(s->error, P.error, sizeof(s->error));
+    memcpy(s->title, P.title, sizeof(s->title));
+    s->reconnect_attempt = P.reconnecting;
+    s->reconnect_max = RECONNECT_MAX_ATTEMPTS;
+    {
+        SceUInt64 now = sceKernelGetProcessTimeWide();
+        s->retry_in_s = P.reconnecting && P.retry_at > now
+                            ? (unsigned)((P.retry_at - now + 999999) / 1000000) : 0;
+    }
+    memcpy(s->reconnect_why, P.reconnect_why, sizeof(s->reconnect_why));
     unlock();
 }
 

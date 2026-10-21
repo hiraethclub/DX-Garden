@@ -1258,6 +1258,15 @@ static const char *state_text(const player_status *st, unsigned *col, char *buf,
     case PLAYER_ERROR:
         *col = COL_BAD;
         return "Error";
+    case PLAYER_RECONNECTING:
+        *col = COL_ACCENT;
+        if (st->retry_in_s)
+            snprintf(buf, n, "Reconnecting in %u s (%d of %d)", st->retry_in_s,
+                     st->reconnect_attempt, st->reconnect_max);
+        else
+            snprintf(buf, n, "Reconnecting (%d of %d)", st->reconnect_attempt,
+                     st->reconnect_max);
+        return buf;
     }
     return "";
 }
@@ -1269,8 +1278,13 @@ static void draw_top_bar(const player_status *st, const sys_status *sys)
     gfx_rect(0, 0, SCREEN_W, TOP_H, COL_PANEL);
     if (A.np_name[0]) {
         gfx_text_fit(MARGIN, 22, 520, COL_TEXT, 19, 1, A.np_name);
-        /* Track titles (ICY metadata) arrive in M4. */
-        gfx_text_fit(MARGIN, 43, 520, COL_DIM, 15, 0, "Now playing: track titles come in M4");
+        /* Track or show title from the stream, when it sends one. */
+        if (st->state == PLAYER_RECONNECTING && st->reconnect_why[0])
+            gfx_text_fit(MARGIN, 43, 520, COL_ACCENT, 15, 0, st->reconnect_why);
+        else if (st->title[0] && st->state != PLAYER_IDLE && st->state != PLAYER_ERROR)
+            gfx_text_fit(MARGIN, 43, 520, COL_DIM, 15, 0, st->title);
+        else if (st->icy_name[0] && st->state != PLAYER_IDLE && st->state != PLAYER_ERROR)
+            gfx_text_fit(MARGIN, 43, 520, COL_DIM, 15, 0, st->icy_name);
     } else {
         gfx_text(MARGIN, 32, COL_TEXT, 22, 1, "DX Garden");
     }
@@ -1533,7 +1547,7 @@ static void draw_place_menu(void)
 
 static void draw_details(const player_status *st, const sys_status *sys)
 {
-    char buf[300], a[32], b[32];
+    char buf[300], a[32], b[64];
     unsigned col;
     const char *state = state_text(st, &col, b, sizeof(b));
     int y = 110;
@@ -1547,6 +1561,10 @@ static void draw_details(const player_status *st, const sys_status *sys)
     y += 30;
     if (st->error[0])
         y = gfx_text_wrap(64, y, SCREEN_W - 128, 24, 2, COL_BAD, 17, st->error);
+    else if (st->state == PLAYER_RECONNECTING && st->reconnect_why[0])
+        y = gfx_text_wrap(64, y, SCREEN_W - 128, 24, 2, COL_ACCENT, 17, st->reconnect_why);
+    else if (st->title[0])
+        y = gfx_text_wrap(64, y, SCREEN_W - 128, 24, 2, COL_TEXT, 17, st->title);
 
     y = 270;
     snprintf(buf, sizeof(buf), "Station: %s", A.np_name[0] ? A.np_name : "-");

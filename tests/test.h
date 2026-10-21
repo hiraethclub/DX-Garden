@@ -22,6 +22,7 @@ void run_globe_tests(void);
 void run_controls_tests(void);
 void run_stationfile_tests(void);
 void run_bidi_tests(void);
+void run_stream_tests(void);
 /* dxgarden_test FILE...: checks generated stations files instead. */
 int check_station_files(int argc, char **argv);
 

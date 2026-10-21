@@ -98,8 +98,8 @@ int main(void)
     SceCtrlData pad;
     SceUInt64 rate_time, stats_time;
     uint64_t rate_bytes = 0, stats_bytes = 0;
-    const char *state_names[] = { "idle", "connecting", "buffering",
-                                  "playing", "stopping", "error" };
+    const char *state_names[] = { "idle",    "connecting", "buffering",   "playing",
+                                  "stopping", "error",     "reconnecting" };
     player_state last_state = PLAYER_IDLE;
 
     fs_mkdir("ux0:data");
@@ -166,6 +166,7 @@ int main(void)
     if (!sys.wifi_connected)
         LOG("wifi: not connected at start");
     rate_time = stats_time = sceKernelGetProcessTimeWide();
+    gfx_reset_stats(); /* so loading doesn't count as one long frame */
 
     for (;;) {
         SceUInt64 now;

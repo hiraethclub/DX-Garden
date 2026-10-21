@@ -16,6 +16,7 @@ set(CORE_SOURCES
     core/config.c
     core/controls.c
     core/globe.c
+    core/icy.c
     core/library.c
     core/load_report.c
     core/playlist.c
@@ -23,6 +24,7 @@ set(CORE_SOURCES
     core/station.c
     core/stations_file.c
     core/stream_buffer.c
+    core/stream_info.c
     core/strmap.c
     core/text.c
     core/userlist.c
@@ -63,6 +65,8 @@ if(VITA)
     # vita/ uses POSIX bits (strncasecmp) from newlib.
     set_target_properties(dxgarden PROPERTIES C_EXTENSIONS ON)
     target_compile_options(dxgarden PRIVATE -Wall -Wextra -O2)
+    # Keeps room after the code segment for vita-elf-create (see the file).
+    target_link_options(dxgarden PRIVATE "-Wl,-T,${CMAKE_SOURCE_DIR}/cmake/vita-gap.ld")
 
     target_link_libraries(dxgarden
         vitaGL vitashark SceShaccCgExt mathneon taihen_stub SceShaccCg_stub
@@ -120,6 +124,7 @@ else()
         tests/test_controls.c
         tests/test_stationfiles.c
         tests/test_bidi.c
+        tests/test_stream.c
     )
     target_include_directories(dxgarden_test PRIVATE core)
     target_compile_definitions(dxgarden_test PRIVATE
