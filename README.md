@@ -21,7 +21,7 @@ with the desktop script (see "Building a station list" below).
 
 ## Status
 
-Early development (build 00.23). It plays MP3 streams over HTTP and HTTPS
+Early development (build 00.24). It plays MP3 streams over HTTP and HTTPS
 from your own station list, which you can browse by country, city or genre,
 with favourites and recently played. Imported playlists can be given a place
 in the app. Build 00.07 adds the globe: turn it and stop the crosshair on a
@@ -88,6 +88,25 @@ stations by default, since that is the only format the app plays.
 The bundled list was made this way, with `--bundle <version>` for its
 header.
 
+## LiveArea art
+
+The home-screen bubble and LiveArea images live in `art/livearea/` as normal
+full-colour PNGs. The Vita needs them as 8-bit palette PNGs at exact sizes:
+
+| File | Size | What it is |
+|---|---|---|
+| `icon0.png` | 128x128 | Home-screen bubble, cropped to a circle |
+| `bg.png` | 840x500 | LiveArea background; the gate and title sit on top |
+| `startup.png` | 280x158 | The gate you tap to start the app |
+
+```sh
+python3 tools/make_livearea.py placeholders   # labelled templates with a grid
+python3 tools/make_livearea.py install        # your art in art/livearea/ -> sce_sys/
+```
+
+`install` checks the sizes, converts to 256 colours (dithered) and copies
+the results into `sce_sys/`; then rebuild. Needs Pillow.
+
 ## Files on the Vita
 
 All in `ux0:data/dxgarden/`. They are created on first run if missing.
@@ -112,7 +131,7 @@ All in `ux0:data/dxgarden/`. They are created on first run if missing.
   CJK SC made by `tools/make_fonts.py`.
 - Text shaping: HarfBuzz (MIT) and FriBidi (LGPL 2.1), linked from VitaSDK's
   packages.
-- LiveArea art is drawn by `tools/make_livearea.py` for this project.
+- LiveArea art: see "LiveArea art" above.
 - The bundled station list (`assets/stations/stations.txt`, shipped in the
   VPK) and lists made with `tools/rb_to_stations.py` come from Radio
   Browser (radio-browser.info), whose API documentation says it may be used

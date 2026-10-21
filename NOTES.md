@@ -1139,3 +1139,24 @@ the AAC message, 404, HLS, and DNS retries with back-off. Fixes:
   reconnect every 10 s. None in the list does, but the Notes bitrate is
   unknown ("?k") for 809 stations.
 - The bundled list's header now says 00.23 (same snapshot as 00.22).
+
+## Build 00.24: placeholder LiveArea art
+
+- The old LiveArea art is replaced by labelled placeholders for the tester
+  to draw over (`art/livearea/`, made by `tools/make_livearea.py
+  placeholders`): icon0 128x128, bg 840x500, startup 280x158, each with its
+  size, purpose, a coordinate grid, a 5% margin guide and, for the icon,
+  the circle the bubble crops to. They are installed too, so the build
+  shows where each image lands.
+- `make_livearea.py install [DIR]` checks sizes, flattens transparency onto
+  black, reduces to 256 colours (dithered) and writes 8-bit palette PNGs
+  into `sce_sys/` (the Vita refuses smaller bit depths: VitaShell error
+  0x8010113D).
+- Left out: the optional `sce_sys/pic0.png`, since where the system shows
+  it isn't confirmed.
+- Unsure on hardware: the Vita may keep showing the old bubble and LiveArea
+  after an update install (cached); deleting the app first, or VitaShell's
+  "Refresh LiveArea", should show the new ones.
+- The helper tool for your own lists is planned in
+  `docs/station-helper-plan.md` (recommended: a standard-library Python
+  desktop app with tkinter).
