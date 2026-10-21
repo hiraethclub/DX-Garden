@@ -1160,3 +1160,21 @@ the AAC message, 404, HLS, and DNS retries with back-off. Fixes:
 - The helper tool for your own lists is planned in
   `docs/station-helper-plan.md` (recommended: a standard-library Python
   desktop app with tkinter).
+
+## Build 00.25: globe LiveArea art
+
+- The placeholders are replaced by the globe art from the cloud session's
+  commit b2bc9e7 (kept on the `claude/tender-ramanujan-bfnswa` branch):
+  an orthographic globe drawn from the app's own Natural Earth map
+  (`assets/map/`, public domain), amber place dots, the crosshair and
+  Noto Sans titles (OFL). No outside artwork.
+- Only the three finished images were taken, copied into `art/livearea/`
+  and installed with `make_livearea.py install`; they were already 8-bit
+  palette PNGs, so the conversion doesn't change them. The cloud version of
+  the script that drew them (needs numpy) is not merged; ours keeps the
+  `placeholders` and `install` commands.
+- The placeholders can be made again with `make_livearea.py placeholders`.
+- Unsure on hardware: the gate's position over `bg.png` was assumed
+  (centred), so the focused place (Istanbul) may sit under the gate; check
+  on the Vita. The old bubble may stay cached after an update install
+  (delete the app first, or VitaShell's "Refresh LiveArea").

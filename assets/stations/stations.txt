@@ -1,4 +1,4 @@
-# DX Garden default station list, shipped with DX Garden 00.24.
+# DX Garden default station list, shipped with DX Garden 00.25.
 # Correct as of 2026-10-21. Stations come and go: any that are dead or wrong are
 # yours to edit, delete or replace. This file is yours; the app never
 # overwrites it. Delete it to get the default list back on the next start.
