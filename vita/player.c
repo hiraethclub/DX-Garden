@@ -510,6 +510,16 @@ static int net_thread(SceSize args, void *argp)
 static int16_t pcm[2][GRAIN * 2]; /* double-buffered: hardware reads one */
 static unsigned char in_buf[READ_CHUNK];
 
+/* Output volume in percent, set by the UI thread (sleep timer fade). */
+static volatile int volume_pct = 100;
+
+static void apply_volume(int port, int pct)
+{
+    int v = SCE_AUDIO_VOLUME_0DB * pct / 100, vols[2];
+    vols[0] = vols[1] = v;
+    sceAudioOutSetVolume(port, SCE_AUDIO_VOLUME_FLAG_L_CH | SCE_AUDIO_VOLUME_FLAG_R_CH, vols);
+}
+
 static int open_port(int port, long rate)
 {
     if (port >= 0)
@@ -531,7 +541,7 @@ static int dec_thread(SceSize args, void *argp)
     mpg123_handle *mh;
     const long *rates;
     size_t nrates, i, filled = 0;
-    int err, port = -1, cur = 0, failed = 0;
+    int err, port = -1, cur = 0, failed = 0, applied_volume = -1;
     long port_rate = 0;
     (void)args; (void)argp;
 
@@ -590,6 +600,7 @@ static int dec_thread(SceSize args, void *argp)
                 if (rate != port_rate) {
                     port = open_port(port, rate);
                     port_rate = rate;
+                    applied_volume = -1; /* a new port starts at full volume */
                     if (port < 0) {
                         failed = 1;
                         break;
@@ -609,6 +620,10 @@ static int dec_thread(SceSize args, void *argp)
                 P.decode_us += sceKernelGetProcessTimeWide() - t0;
                 P.samples_out += GRAIN;
                 unlock();
+                if (volume_pct != applied_volume) {
+                    applied_volume = volume_pct;
+                    apply_volume(port, applied_volume);
+                }
                 /* Blocks until the port can take another grain. */
                 sceAudioOutOutput(port, pcm[cur]);
                 t0 = sceKernelGetProcessTimeWide();
@@ -759,6 +774,11 @@ void player_set_prebuffer(size_t prebuffer)
     sb_set_prebuffer(&P.sb, prebuffer);
     sceKernelSignalLwCondAll(&P.data_cond);
     unlock();
+}
+
+void player_set_volume(int pct)
+{
+    volume_pct = pct < 0 ? 0 : pct > 100 ? 100 : pct;
 }
 
 void player_update(void)

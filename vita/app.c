@@ -16,6 +16,7 @@
 #include "log.h"
 #include "playlist.h"
 #include "revision.h"
+#include "search.h"
 #include "stations_file.h"
 #include "text.h"
 
@@ -45,6 +46,8 @@
 #define RECENT_SAVE_US (5 * 1000 * 1000)
 
 #define TOAST_US (4 * 1000 * 1000)
+#define SEARCH_MAX 300 /* places and stations each */
+#define SLEEP_FADE_US (10 * 1000 * 1000)
 #define REPEAT_DELAY_US 400000
 #define REPEAT_RATE_US 70000
 
@@ -64,7 +67,8 @@ static const char *const TAB_NAMES[TAB_COUNT] = {
     "Countries", "Cities", "Genres", "Favourites", "Recent", "Unplaced"
 };
 
-typedef enum { ROW_COUNTRY, ROW_PLACE, ROW_GENRE, ROW_STATION } row_kind;
+/* ROW_MIXED (search results): places as -1 - index, stations as index. */
+typedef enum { ROW_COUNTRY, ROW_PLACE, ROW_GENRE, ROW_STATION, ROW_MIXED } row_kind;
 
 typedef struct {
     row_kind kind;
@@ -72,6 +76,7 @@ typedef struct {
     int n;
     char crumb[160];
     int sel, top;
+    int is_search;
 } view;
 
 typedef enum {
@@ -91,11 +96,15 @@ typedef enum {
     FLOW_CITY,
     FLOW_COUNTRY,
     FLOW_LAT,
-    FLOW_LON
+    FLOW_LON,
+    FLOW_SEARCH
 } flow_step;
 
 typedef enum {
     MENU_PLACE,
+    MENU_SEARCH,
+    MENU_RANDOM,
+    MENU_SLEEP,
     MENU_ADD_URL,
     MENU_DETAILS,
     MENU_SETTINGS,
@@ -105,7 +114,7 @@ typedef enum {
 } menu_action;
 
 #define MAX_DEPTH 4
-#define MAX_MENU 8
+#define MAX_MENU 12
 
 typedef enum { MODE_LIST, MODE_GLOBE } app_mode;
 
@@ -163,7 +172,17 @@ static struct {
     int set_capture;  /* action waiting for a button, or -1 */
     int set_dirty;
     int set_about;    /* the About panel is open inside Settings */
+
+    char search_text[128]; /* last query, offered again */
+
+    /* Sleep timer: SLEEP_MINUTES[sleep_idx], ending at sleep_end. */
+    int sleep_idx;
+    SceUInt64 sleep_end;
+    int sleep_restore; /* volume back to 100 once the stop has finished */
 } A;
+
+static const int SLEEP_MINUTES[] = { 0, 15, 30, 60, 90 };
+#define SLEEP_CHOICES ((int)(sizeof(SLEEP_MINUTES) / sizeof(SLEEP_MINUTES[0])))
 
 /* ---- button mapping ------------------------------------------------------ */
 
@@ -340,6 +359,28 @@ static void station_place_label(const station *s, char *out, size_t n)
         snprintf(out, n, "Unplaced, from %s", s->source_file);
 }
 
+/* The row kind of an item, resolving search results to a place or a
+ * station; the place or station index goes to *idx. */
+static row_kind item_kind(const view *v, int item, int *idx)
+{
+    if (v->kind != ROW_MIXED) {
+        *idx = item;
+        return v->kind;
+    }
+    *idx = item < 0 ? -1 - item : item;
+    return item < 0 ? ROW_PLACE : ROW_STATION;
+}
+
+/* The station selected in the list, or -1. */
+static int selected_station(void)
+{
+    view *v = cur();
+    int idx;
+    if (A.mode != MODE_LIST || v->n == 0 || item_kind(v, v->items[v->sel], &idx) != ROW_STATION)
+        return -1;
+    return idx;
+}
+
 static void move_sel(int delta)
 {
     view *v = cur();
@@ -363,6 +404,11 @@ static void play_station(int si)
     station *s = station_at(si);
     char where[256];
 
+    if (A.sleep_restore) {
+        /* The sleep timer stopped the last stream at zero volume. */
+        player_set_volume(100);
+        A.sleep_restore = 0;
+    }
     player_start(s->url, A.prebuffer);
     station_place_label(s, where, sizeof(where));
     snprintf(A.np_name, sizeof(A.np_name), "%s", s->name);
@@ -463,11 +509,15 @@ static void finish_placing(const char *city_in, const char *country_in, double l
 
 static void open_menu(void)
 {
-    view *v = cur();
+    int si = selected_station();
     A.menu_n = 0;
-    if (A.mode == MODE_LIST && !A.picking && v->kind == ROW_STATION && v->n > 0 &&
-        station_at(v->items[v->sel])->place < 0)
+    if (!A.picking && si >= 0 && station_at(si)->place < 0)
         A.menu[A.menu_n++] = MENU_PLACE;
+    if (!A.picking) {
+        A.menu[A.menu_n++] = MENU_SEARCH;
+        A.menu[A.menu_n++] = MENU_RANDOM;
+    }
+    A.menu[A.menu_n++] = MENU_SLEEP;
     A.menu[A.menu_n++] = MENU_ADD_URL;
     A.menu[A.menu_n++] = MENU_DETAILS;
     A.menu[A.menu_n++] = MENU_SETTINGS;
@@ -478,12 +528,37 @@ static void open_menu(void)
     A.ov = OV_MENU;
 }
 
+/* "25 min" or "40 s": time left on the sleep timer. */
+static void sleep_left(char *out, size_t n)
+{
+    SceUInt64 now = sceKernelGetProcessTimeWide();
+    unsigned s = A.sleep_end > now ? (unsigned)((A.sleep_end - now + 999999) / 1000000) : 0;
+    if (s >= 60)
+        snprintf(out, n, "%u min", (s + 59) / 60);
+    else
+        snprintf(out, n, "%u s", s);
+}
+
 static void menu_label(menu_action a, char *out, size_t n)
 {
-    view *v = cur();
     switch (a) {
     case MENU_PLACE:
-        snprintf(out, n, "Choose a place for \"%s\"", station_at(v->items[v->sel])->name);
+        snprintf(out, n, "Choose a place for \"%s\"", station_at(selected_station())->name);
+        break;
+    case MENU_SEARCH:
+        snprintf(out, n, "Search stations and places");
+        break;
+    case MENU_RANDOM:
+        snprintf(out, n, "Jump to a random place");
+        break;
+    case MENU_SLEEP:
+        if (A.sleep_end) {
+            char left[32];
+            sleep_left(left, sizeof(left));
+            snprintf(out, n, "Sleep timer: %d min (%s left)", SLEEP_MINUTES[A.sleep_idx], left);
+        } else {
+            snprintf(out, n, "Sleep timer: off");
+        }
         break;
     case MENU_ADD_URL:
         snprintf(out, n, "Add station by URL");
@@ -520,6 +595,8 @@ static void ime_step(flow_step step, const char *title, const char *initial, ime
     else
         message("The on-screen keyboard could not be opened.");
 }
+
+static void run_search(const char *text);
 
 static void flow_result(const char *text)
 {
@@ -579,6 +656,10 @@ static void flow_result(const char *text)
         }
         ime_step(FLOW_LON, "Longitude (east +, west -), e.g. 13.40", "", IME_NUMBER, 12);
         break;
+    case FLOW_SEARCH:
+        A.flow = FLOW_NONE;
+        run_search(t);
+        break;
     case FLOW_LON: {
         double lon;
         A.flow = FLOW_NONE;
@@ -619,10 +700,21 @@ static unsigned repeat_mask(unsigned held, unsigned pressed)
     return pressed;
 }
 
+static void tune_place(int pl, const player_status *st);
+
+/* Plays a place now: its playing station, first favourite or first. */
+static void tune_place_now(int pl)
+{
+    player_status st;
+    player_get_status(&st);
+    tune_place(pl, &st);
+}
+
 static void browse_input(unsigned p)
 {
     view *v = cur();
-    int sel_item = v->n ? v->items[v->sel] : -1;
+    int sel_item = -1;
+    row_kind kind = v->n ? item_kind(v, v->items[v->sel], &sel_item) : v->kind;
 
     if (p & SCE_CTRL_UP)
         move_sel(-1);
@@ -645,7 +737,14 @@ static void browse_input(unsigned p)
     if ((p & SCE_CTRL_CROSS) && sel_item >= 0) {
         library *lib = &A.d->lib;
         char crumb[160];
-        switch (v->kind) {
+        if (kind == ROW_PLACE && v->kind == ROW_MIXED && globe_view_ready()) {
+            /* A place found by search: turn the globe to it and listen. */
+            A.mode = MODE_GLOBE;
+            globe_view_focus(lib, sel_item, 1);
+            tune_place_now(sel_item);
+            return;
+        }
+        switch (kind) {
         case ROW_COUNTRY:
             push_view(ROW_PLACE, lib->countries[sel_item].items, lib->countries[sel_item].n,
                       lib->countries[sel_item].name);
@@ -667,6 +766,8 @@ static void browse_input(unsigned p)
         case ROW_STATION:
             play_station(sel_item);
             break;
+        case ROW_MIXED:
+            break;
         }
         return;
     }
@@ -681,7 +782,7 @@ static void browse_input(unsigned p)
         }
         return;
     }
-    if (act(p, ACT_FAVOURITE) && v->kind == ROW_STATION && sel_item >= 0 && !A.picking)
+    if (act(p, ACT_FAVOURITE) && kind == ROW_STATION && sel_item >= 0 && !A.picking)
         toggle_favourite(sel_item);
     if (act(p, ACT_STOP))
         player_stop();
@@ -690,6 +791,9 @@ static void browse_input(unsigned p)
     if (act(p, ACT_VIEW) && !A.picking)
         show_globe();
 }
+
+static void random_place(void);
+static void sleep_cycle(void);
 
 static int menu_input(unsigned p)
 {
@@ -707,7 +811,17 @@ static int menu_input(unsigned p)
     A.ov = OV_NONE;
     switch (A.menu[A.menu_sel]) {
     case MENU_PLACE:
-        start_placing(station_at(cur()->items[cur()->sel])->url);
+        start_placing(station_at(selected_station())->url);
+        break;
+    case MENU_SEARCH:
+        ime_step(FLOW_SEARCH, "Search stations and places", A.search_text, IME_TEXT, 60);
+        break;
+    case MENU_RANDOM:
+        random_place();
+        break;
+    case MENU_SLEEP:
+        sleep_cycle();
+        A.ov = OV_MENU; /* stays open, so Cross steps through the choices */
         break;
     case MENU_ADD_URL:
         ime_step(FLOW_ADD_URL, "Stream URL (http:// or https://)", "http://", IME_URL, 500);
@@ -1157,12 +1271,131 @@ static void globe_input_frame(const SceCtrlData *pad, unsigned pressed, const pl
         if (si >= 0)
             toggle_favourite(si);
     }
+    if (act(pressed, ACT_RANDOM))
+        random_place();
     if (act(pressed, ACT_STOP))
         player_stop();
     if (act(pressed, ACT_MENU))
         open_menu();
     if (act(pressed, ACT_VIEW))
         A.mode = MODE_LIST;
+}
+
+/* ---- search, random place, sleep timer ---------------------------------- */
+
+static void run_search(const char *text)
+{
+    search_result sr;
+    SceUInt64 t0 = sceKernelGetProcessTimeWide();
+    char crumb[160];
+    int *items, i, n = 0;
+
+    snprintf(A.search_text, sizeof(A.search_text), "%s", text);
+    if (!text[0])
+        return;
+    if (library_search(&A.d->lib, text, SEARCH_MAX, &sr) != 0) {
+        message("Not enough memory to search.");
+        return;
+    }
+    items = malloc((size_t)(sr.n_places + sr.n_stations + 1) * sizeof(int));
+    if (!items) {
+        search_result_free(&sr);
+        message("Not enough memory to search.");
+        return;
+    }
+    for (i = 0; i < sr.n_places; i++)
+        items[n++] = -1 - sr.places[i];
+    for (i = 0; i < sr.n_stations; i++)
+        items[n++] = sr.stations[i];
+    LOG("search: \"%s\": %d places, %d stations%s, %u ms", text, sr.n_places, sr.n_stations,
+        sr.more ? " (cut)" : "", (unsigned)((sceKernelGetProcessTimeWide() - t0) / 1000));
+    snprintf(crumb, sizeof(crumb), "Search \"%s\": %d place%s, %d station%s", text,
+             sr.n_places, sr.n_places == 1 ? "" : "s", sr.n_stations,
+             sr.n_stations == 1 ? "" : "s");
+    if (sr.more) {
+        size_t len = strlen(crumb);
+        snprintf(crumb + len, sizeof(crumb) - len, " (first %d of each)", SEARCH_MAX);
+    }
+
+    /* Results sit one level below the current tab's root. */
+    A.mode = MODE_LIST;
+    while (A.depth > 0) {
+        view_free(cur());
+        A.depth--;
+    }
+    push_view(ROW_MIXED, items, n, crumb);
+    cur()->is_search = 1;
+    free(items);
+    search_result_free(&sr);
+}
+
+static void random_place(void)
+{
+    const library *lib = &A.d->lib;
+    int n = lib->n_places, pl;
+
+    if (!globe_view_ready()) {
+        toast("The globe is unavailable: its map file is missing. Reinstall the VPK.");
+        return;
+    }
+    if (n == 0) {
+        toast("No places yet. Add stations with coordinates to stations.txt.");
+        return;
+    }
+    pl = rand() % n;
+    if (n > 1 && pl == A.np_place_idx)
+        pl = (pl + 1 + rand() % (n - 1)) % n;
+    LOG("random: %s, %s", lib->places[pl].name, lib->places[pl].country);
+    A.mode = MODE_GLOBE;
+    globe_view_focus(lib, pl, 1);
+    tune_place_now(pl);
+}
+
+/* Off, 15, 30, 60, 90 minutes, then off again. */
+static void sleep_cycle(void)
+{
+    int m;
+
+    A.sleep_idx = (A.sleep_idx + 1) % SLEEP_CHOICES;
+    m = SLEEP_MINUTES[A.sleep_idx];
+    player_set_volume(100); /* undo a fade in progress */
+    if (m == 0) {
+        A.sleep_end = 0;
+        LOG("sleep: off");
+        toast("Sleep timer off");
+    } else {
+        A.sleep_end = sceKernelGetProcessTimeWide() + (SceUInt64)m * 60 * 1000000;
+        LOG("sleep: %d min", m);
+        toast("Playback stops in %d minutes", m);
+    }
+}
+
+/* Each frame: fade out over the last SLEEP_FADE_US, then stop. */
+static void sleep_update(const player_status *st)
+{
+    SceUInt64 now = sceKernelGetProcessTimeWide();
+
+    if (A.sleep_restore && (st->state == PLAYER_IDLE || st->state == PLAYER_ERROR)) {
+        player_set_volume(100);
+        A.sleep_restore = 0;
+    }
+    if (!A.sleep_end)
+        return;
+    if (now >= A.sleep_end) {
+        LOG("sleep: time is up, stopping");
+        player_set_volume(0);
+        player_stop();
+        A.sleep_end = 0;
+        A.sleep_idx = 0;
+        A.sleep_restore = 1;
+        toast("Sleep timer: playback stopped");
+        return;
+    }
+    if (A.sleep_end - now < SLEEP_FADE_US) {
+        /* Squared, so the fade sounds even rather than sudden at the end. */
+        float f = (float)(A.sleep_end - now) / SLEEP_FADE_US;
+        player_set_volume((int)(f * f * 100.0f + 0.5f));
+    }
 }
 
 int app_update(const SceCtrlData *pad, const player_status *st)
@@ -1173,6 +1406,7 @@ int app_update(const SceCtrlData *pad, const player_status *st)
 
     A.prev_buttons = buttons;
     save_recent_if_due(0);
+    sleep_update(st);
 
     if (ime_active()) {
         char text[1024];
@@ -1297,8 +1531,18 @@ static void draw_top_bar(const player_status *st, const sys_status *sys)
         snprintf(buf, sizeof(buf), "Wi-Fi %s", sys->ip);
     else
         snprintf(buf, sizeof(buf), "Wi-Fi off");
-    gfx_text_right(SCREEN_W - MARGIN, 32, sys->wifi_connected ? COL_GOOD : COL_BAD, 16, 0,
-                   buf);
+    if (A.sleep_end) {
+        /* Two lines: Wi-Fi above, the sleep timer below. */
+        char left[32], line[48];
+        gfx_text_right(SCREEN_W - MARGIN, 22, sys->wifi_connected ? COL_GOOD : COL_BAD, 15, 0,
+                       buf);
+        sleep_left(left, sizeof(left));
+        snprintf(line, sizeof(line), "Sleep in %s", left);
+        gfx_text_right(SCREEN_W - MARGIN, 43, COL_ACCENT, 15, 0, line);
+    } else {
+        gfx_text_right(SCREEN_W - MARGIN, 32, sys->wifi_connected ? COL_GOOD : COL_BAD, 16, 0,
+                       buf);
+    }
 }
 
 static void draw_tabs(void)
@@ -1350,6 +1594,9 @@ static void draw_crumb(void)
 
 static const char *empty_text(void)
 {
+    if (cur()->is_search)
+        return "No stations or places match. Try fewer letters or another spelling; accents "
+               "and capitals don't matter.";
     if (A.depth > 0)
         return "Nothing here.";
     switch (A.tab) {
@@ -1375,12 +1622,13 @@ static const char *empty_text(void)
 static void draw_row(const view *v, int idx, int y)
 {
     library *lib = &A.d->lib;
-    int item = v->items[idx], sel = idx == v->sel;
+    int item, sel = idx == v->sel;
+    row_kind kind = item_kind(v, v->items[idx], &item);
     char main[300], sub[300], right[64];
     int is_fav = 0, is_playing = 0;
 
     main[0] = sub[0] = right[0] = '\0';
-    switch (v->kind) {
+    switch (kind) {
     case ROW_COUNTRY: {
         const group *g = &lib->countries[item];
         snprintf(main, sizeof(main), "%s", g->name);
@@ -1417,6 +1665,8 @@ static void draw_row(const view *v, int idx, int y)
             snprintf(right, sizeof(right), "on air");
         break;
     }
+    case ROW_MIXED:
+        break;
     }
 
     if (sel)
@@ -1426,7 +1676,7 @@ static void draw_row(const view *v, int idx, int y)
         gfx_circle(MARGIN + 6, y + (sub[0] ? 19 : ROW_H / 2), 5, COL_ACCENT);
 
     {
-        int tx = MARGIN + (v->kind == ROW_STATION ? 20 : 4);
+        int tx = MARGIN + (kind == ROW_STATION ? 20 : 4);
         int rw = right[0] ? gfx_text_width(16, 0, right) + 16 : 0;
         int maxw = SCREEN_W - MARGIN - 16 - tx - rw;
         if (sub[0]) {
@@ -1487,14 +1737,18 @@ static void draw_panel(const player_status *st)
 
     x = MARGIN;
     if (v->n) {
-        const char *verb = v->kind == ROW_STATION ? "Play"
-                         : (v->kind == ROW_PLACE && A.picking) ? "Choose" : "Open";
+        int idx;
+        row_kind kind = item_kind(v, v->items[v->sel], &idx);
+        const char *verb = kind == ROW_STATION                         ? "Play"
+                           : (kind == ROW_PLACE && A.picking)          ? "Choose"
+                           : (kind == ROW_PLACE && v->kind == ROW_MIXED) ? "Go there"
+                                                                        : "Open";
         x = gfx_hint(x, PANEL_Y + 56, BTN_CROSS, verb);
     }
     if (A.depth > 0 || A.picking)
         x = gfx_hint(x, PANEL_Y + 56, BTN_CIRCLE, A.depth > 0 ? "Back" : "Cancel");
     if (!A.picking) {
-        if (v->kind == ROW_STATION && v->n)
+        if (selected_station() >= 0)
             x = hint_act(x, PANEL_Y + 56, ACT_FAVOURITE, "Favourite");
         x = hint_act(x, PANEL_Y + 56, ACT_STOP, "Stop");
         x = hint_act(x, PANEL_Y + 56, ACT_MENU, "Menu");
@@ -1511,17 +1765,17 @@ static void draw_box(int x, int y, int w, int h)
 
 static void draw_menu(void)
 {
-    int i, h = 70 + A.menu_n * 48, y0 = (SCREEN_H - h) / 2;
+    int i, h = 70 + A.menu_n * 42, y0 = (SCREEN_H - h) / 2;
     char label[300];
 
     draw_box(200, y0, 560, h);
     gfx_text(224, y0 + 40, COL_TEXT, 22, 1, "Menu");
     for (i = 0; i < A.menu_n; i++) {
-        int y = y0 + 58 + i * 48;
+        int y = y0 + 58 + i * 42;
         if (i == A.menu_sel)
-            gfx_rect(212, y, 536, 44, COL_PANEL_HI);
+            gfx_rect(212, y, 536, 39, COL_PANEL_HI);
         menu_label(A.menu[i], label, sizeof(label));
-        gfx_text_fit(232, y + 30, 500, A.menu[i] == MENU_QUIT ? COL_BAD : COL_TEXT, 20,
+        gfx_text_fit(232, y + 27, 500, A.menu[i] == MENU_QUIT ? COL_BAD : COL_TEXT, 20,
                      i == A.menu_sel, label);
     }
 }
@@ -1774,6 +2028,7 @@ static void draw_globe_panel(const player_status *st, double now)
     x = hint_act(x, y, ACT_STOP, "Stop");
     x = hint_pair(x, y, ACT_ZOOM_OUT, ACT_ZOOM_IN, "Zoom", "Zoom out", "Zoom in");
     x = gfx_hint_key(x, y, "R-STICK", "Station");
+    x = hint_act(x, y, ACT_RANDOM, "Random");
     x = hint_act(x, y, ACT_MENU, "Menu");
     hint_act(x, y, ACT_VIEW, "List");
 }
@@ -1821,12 +2076,12 @@ static void draw_settings(void)
     gfx_text_right(x0 + w - 24, y0 + 36, COL_DIM, 15, 0,
                    "Cross and Circle are fixed; the d-pad and sticks move");
     for (i = 0; i < SET_ROWS; i++) {
-        int y = y0 + 50 + i * 30, sel = i == A.set_sel;
+        int y = y0 + 50 + i * 29, sel = i == A.set_sel;
         const char *label, *where = "", *value;
         unsigned vcol = COL_TEXT;
 
         if (sel)
-            gfx_rect(x0 + 12, y, w - 24, 28, COL_PANEL_HI);
+            gfx_rect(x0 + 12, y, w - 24, 27, COL_PANEL_HI);
         if (i < ACT_COUNT) {
             int c = ctl_action_contexts((ctl_action)i);
             label = ctl_action_label((ctl_action)i);
@@ -1944,6 +2199,7 @@ void app_init(app_data *d)
     A.snap_px = config_get_int(&d->cfg, "globe", "snap_px", CONFIG_SNAP_PX_DEFAULT,
                                CONFIG_SNAP_PX_MIN, CONFIG_SNAP_PX_MAX);
     A.np_place_idx = -1;
+    srand((unsigned)sceKernelGetProcessTimeLow());
     /* Start where the stations are. */
     A.tab = d->lib.n_places ? TAB_COUNTRIES : d->lib.n_unplaced ? TAB_UNPLACED : TAB_COUNTRIES;
     build_root();

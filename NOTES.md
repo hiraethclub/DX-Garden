@@ -909,3 +909,39 @@ the AAC message, 404, HLS, and DNS retries with back-off. Fixes:
     is the source data, not the app.
 - **Still untested:** reconnecting after a real drop mid-stream (no stream
   dropped during the test), and mpg123's resync when that happens.
+
+## M5 part 1: search, random place, sleep timer (build 00.17)
+
+- **Plan for M5:** 00.17 is search, random place and the sleep timer;
+  00.18 is screen off and standby/resume. HLS stays out unless asked for.
+- **Search** (`core/search.c`, START → Search stations and places):
+  - The query is folded like sort keys (case and common Latin accents
+    ignored), split into words, and a name matches if it contains every
+    word. Places match on "name country" ("portland united" narrows it),
+    stations on their name only.
+  - Ranked: name starts with the query, then a word in it starts with the
+    first query word, then anywhere; alphabetical within each. At most 300
+    places and 300 stations.
+  - Results are one list below the current tab's root: places first, then
+    stations (`ROW_MIXED`; places stored as -1 - index). Cross on a place
+    turns the globe to it and plays it; Cross on a station plays it.
+    Circle goes back to the tab. The last query is offered again.
+  - Each search folds every place name again (about 2,900 small
+    allocations). The log line `search:` gives the time; if it's slow on
+    the Vita, the folded place text can be kept in the library instead.
+  - Non-Latin scripts match exactly (no case folding beyond ASCII and
+    Latin accents).
+- **Random place:** START → Jump to a random place, or the new remappable
+  "Random place" action on the globe (no button by default, because every
+  remappable button already has a globe action). Never picks the place
+  already playing. The globe turns there and it plays straight away.
+- **Sleep timer:** START → Sleep timer. Cross steps Off → 15 → 30 → 60 →
+  90 min → Off, with the menu kept open. The top bar shows "Sleep in N
+  min" under the Wi-Fi state. The last 10 s fade out (volume squared), then
+  playback stops. Once the player has stopped, the volume goes back to
+  full, and starting a station also restores it. After the stop, the Vita's
+  normal auto-standby applies again.
+  - Volume is set per audio port with `sceAudioOutSetVolume`, applied by
+    the decode thread before each 1024-sample grain (about 23 ms).
+- **Layout:** the menu rows are 42 px (was 48) to fit up to 10 entries;
+  Settings rows are 29 px (was 30) for the extra button row.

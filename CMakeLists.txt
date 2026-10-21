@@ -21,6 +21,7 @@ set(CORE_SOURCES
     core/load_report.c
     core/playlist.c
     core/ring_buffer.c
+    core/search.c
     core/station.c
     core/stations_file.c
     core/stream_buffer.c

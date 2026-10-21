@@ -17,6 +17,7 @@ static const struct {
     [ACT_ZOOM_OUT] = { "Zoom out", "zoom_out", CTX_GLOBE, 0, CB_L },
     [ACT_NEXT_STATION] = { "Next station", "next_station", CTX_GLOBE, 0, CB_NONE },
     [ACT_PREV_STATION] = { "Previous station", "prev_station", CTX_GLOBE, 0, CB_NONE },
+    [ACT_RANDOM] = { "Random place", "random_place", CTX_GLOBE, 0, CB_NONE },
     [ACT_NEXT_TAB] = { "Next tab", "next_tab", CTX_LIST, 0, CB_R },
     [ACT_PREV_TAB] = { "Previous tab", "prev_tab", CTX_LIST, 0, CB_L },
 };

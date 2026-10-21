@@ -10,6 +10,7 @@
 
 #include "config.h"
 #include "library.h"
+#include "search.h"
 #include "load_report.h"
 #include "playlist.h"
 #include "station_source.h"
@@ -322,6 +323,64 @@ static void test_library(void)
     report_free(&r);
 }
 
+static void test_search(void)
+{
+    library lib;
+    station_list in;
+    load_report r;
+    search_result sr;
+
+    station_list_init(&in);
+    report_init(&r);
+    library_init(&lib);
+    add(&in, "R\xC3\xA1" "dio Cultura", "http://1", "Brazil", "S\xC3\xA3o Paulo", -23.55, -46.63, "");
+    add(&in, "Bigjazzband", "http://2", "Germany", "Berlin", 52.52, 13.40, "");
+    add(&in, "Smooth Jazz Berlin", "http://3", "Germany", "Berlin", 52.52, 13.40, "");
+    add(&in, "Jazz FM", "http://4", "United Kingdom", "London", 51.5, -0.12, "");
+    add(&in, "Pdx", "http://5", "United States", "Portland", 45.52, -122.68, "");
+    add(&in, "Maine", "http://6", "United States", "Portland", 43.66, -70.26, "");
+    CHECK(library_build(&lib, &in, &r) == 0);
+
+    /* Accents and case are ignored. */
+    CHECK(library_search(&lib, "sao", 50, &sr) == 0);
+    CHECK(sr.n_places == 1 && strcmp(lib.places[sr.places[0]].name, "S\xC3\xA3o Paulo") == 0);
+    CHECK(sr.n_stations == 0);
+    search_result_free(&sr);
+    CHECK(library_search(&lib, "  RADIO  ", 50, &sr) == 0 && sr.n_stations == 1);
+    search_result_free(&sr);
+
+    /* Two places with one name; every word must match. */
+    CHECK(library_search(&lib, "portland", 50, &sr) == 0 && sr.n_places == 2);
+    search_result_free(&sr);
+    CHECK(library_search(&lib, "berlin germany", 50, &sr) == 0 && sr.n_places == 1);
+    CHECK(sr.n_stations == 0); /* station names only: "Smooth Jazz Berlin" lacks "germany" */
+    search_result_free(&sr);
+    CHECK(library_search(&lib, "berlin nowhere", 50, &sr) == 0);
+    CHECK(sr.n_places == 0 && sr.n_stations == 0);
+    search_result_free(&sr);
+
+    /* Ranking: starts with, then a word start, then anywhere. */
+    CHECK(library_search(&lib, "jazz", 50, &sr) == 0 && sr.n_stations == 3);
+    CHECK(strcmp(lib.stations.items[sr.stations[0]].name, "Jazz FM") == 0);
+    CHECK(strcmp(lib.stations.items[sr.stations[1]].name, "Smooth Jazz Berlin") == 0);
+    CHECK(strcmp(lib.stations.items[sr.stations[2]].name, "Bigjazzband") == 0);
+    CHECK(!sr.more);
+    search_result_free(&sr);
+
+    /* Cut at max. */
+    CHECK(library_search(&lib, "jazz", 2, &sr) == 0 && sr.n_stations == 2 && sr.more);
+    search_result_free(&sr);
+
+    /* Blank queries match nothing. */
+    CHECK(library_search(&lib, "   ", 50, &sr) == 0 && sr.n_places == 0 && sr.n_stations == 0);
+    search_result_free(&sr);
+    CHECK(library_search(&lib, "", 50, &sr) == 0 && sr.n_places == 0 && sr.n_stations == 0);
+    search_result_free(&sr);
+
+    library_free(&lib);
+    report_free(&r);
+}
+
 static void test_userlist(void)
 {
     userlist l;
@@ -548,6 +607,7 @@ void run_library_tests(void)
     test_stations_format();
     test_playlists();
     test_library();
+    test_search();
     test_userlist();
     test_config();
     test_sources();

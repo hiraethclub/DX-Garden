@@ -57,6 +57,9 @@ void player_shutdown(void);
 void player_start(const char *url, size_t prebuffer);
 void player_stop(void);
 void player_set_prebuffer(size_t prebuffer);
+/* Output volume, 0 to 100 (the system volume still applies on top). Kept
+ * across streams. */
+void player_set_volume(int pct);
 void player_update(void);
 void player_get_status(player_status *out);
 

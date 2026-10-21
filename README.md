@@ -14,7 +14,7 @@ to the Vita yourself (see "Building a station list" below).
 
 ## Status
 
-Early development (build 00.15). It plays MP3 streams over HTTP and HTTPS
+Early development (build 00.17). It plays MP3 streams over HTTP and HTTPS
 from your own station list, which you can browse by country, city or genre,
 with favourites and recently played. Imported playlists can be given a place
 in the app. Build 00.07 adds the globe: turn it and stop the crosshair on a
@@ -23,7 +23,8 @@ under START, then Settings. Station names show in Latin, Greek, Cyrillic,
 Arabic, Hebrew, Thai, Georgian, Ethiopic, Chinese, Japanese and Korean. It shows the current track title when the
 station sends one, follows playlist links, and reconnects by itself when a
 stream drops. It plays MP3 only: AAC, Ogg and HLS stations say so instead
-of playing (see `NOTES.md`).
+of playing (see `NOTES.md`). The START menu has search by station or place
+name, a jump to a random place, and a sleep timer.
 
 ## Building
 

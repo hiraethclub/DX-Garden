@@ -32,6 +32,7 @@ typedef enum {
     ACT_ZOOM_OUT,
     ACT_NEXT_STATION,  /* also on the right stick */
     ACT_PREV_STATION,
+    ACT_RANDOM,        /* jump to a random place */
     ACT_NEXT_TAB,
     ACT_PREV_TAB,
     ACT_COUNT
