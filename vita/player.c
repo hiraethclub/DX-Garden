@@ -29,6 +29,12 @@
 #define PLAYLIST_MAX (64 * 1024)   /* largest playlist body read */
 #define PLAYLIST_DEPTH 3           /* playlists pointing at playlists */
 #define STABLE_BYTES (256 * 1024)  /* a connection this long resets the retry count */
+/* A stream slower than this for STALL_S is treated as dropped. A full ring
+ * still reads at the stream's own bitrate, and the slowest MP3 streams
+ * (16 kbps) send 2 KB/s, so only a stall trickles below it. 00.21 waited
+ * for 20 s of nothing, and a trickling server gave 45 s of silence. */
+#define STALL_BYTES_PER_S 1000L
+#define STALL_S 10L
 
 typedef struct {
     SceKernelLwMutexWork lock;
@@ -313,9 +319,8 @@ static outcome fetch_once(CURL *c, char *msg, size_t mn, char *next, size_t nn)
     curl_easy_setopt(c, CURLOPT_MAXREDIRS, 5L);
     curl_easy_setopt(c, CURLOPT_FAILONERROR, 1L);
     curl_easy_setopt(c, CURLOPT_CONNECTTIMEOUT, 15L);
-    /* A live stream that sends nothing for 20 s is treated as dropped. */
-    curl_easy_setopt(c, CURLOPT_LOW_SPEED_LIMIT, 1L);
-    curl_easy_setopt(c, CURLOPT_LOW_SPEED_TIME, 20L);
+    curl_easy_setopt(c, CURLOPT_LOW_SPEED_LIMIT, STALL_BYTES_PER_S);
+    curl_easy_setopt(c, CURLOPT_LOW_SPEED_TIME, STALL_S);
     curl_easy_setopt(c, CURLOPT_TCP_KEEPALIVE, 1L);
     curl_easy_setopt(c, CURLOPT_HEADERFUNCTION, on_header);
     curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, on_data);
@@ -362,7 +367,7 @@ static outcome fetch_once(CURL *c, char *msg, size_t mn, char *next, size_t nn)
             snprintf(msg, mn, "Couldn't connect to the server");
             break;
         case CURLE_OPERATION_TIMEDOUT:
-            snprintf(msg, mn, P.connected ? "No data from the server for 20 s"
+            snprintf(msg, mn, P.connected ? "The stream stalled (under 1 KB/s for 10 s)"
                                           : "No answer from the server");
             break;
         case CURLE_RECV_ERROR:

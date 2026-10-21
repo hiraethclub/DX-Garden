@@ -56,6 +56,16 @@ class Cleaning(unittest.TestCase):
         self.assertLessEqual(len(long), 100)
         self.assertTrue(long.endswith("word\u2026"))
 
+    def test_unwrap(self):
+        pp = ("https://urldefense.proofpoint.com/v2/url?u=https-3A__listen.warpradio.com_"
+              "ALOHAJOE-3Ftype-3Dhttp-26nocache-3D219622&d=DwMFaQ&c=x&r=y&m=z&s=w&e=")
+        self.assertEqual(rb.clean_url(pp),
+                         "https://listen.warpradio.com/ALOHAJOE?type=http&nocache=219622")
+        sl = ("https://na01.safelinks.protection.outlook.com/?url=https%3A%2F%2Fstream.example"
+              ".org%2Flive.mp3&data=abc&reserved=0")
+        self.assertEqual(rb.clean_url(sl), "https://stream.example.org/live.mp3")
+        self.assertEqual(rb.clean_url("https://a.b/x-1F_y"), "https://a.b/x-1F_y")
+
     def test_url(self):
         self.assertEqual(rb.clean_url(" https://a.b/c d "), "https://a.b/c%20d")
         self.assertIsNone(rb.clean_url("ftp://a.b/c"))

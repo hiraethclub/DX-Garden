@@ -1111,3 +1111,31 @@ the AAC message, 404, HLS, and DNS retries with back-off. Fixes:
   - Positions come from Radio Browser, so a wrong pin gives a wrong nation:
     "Hits Hull & East York" is pinned in Bethesda (Wales), "Radio X" in
     Pwllheli (Wales).
+
+## Build 00.22: from the 00.21 test
+
+- **00.21 on hardware:** the bundled list was copied on first run (1,419
+  KB), loaded in 1.5 s (7,538 stations, 2,805 places, no errors), and the
+  relabelled places played as expected.
+- **First real mid-stream drop:** KAN Gimel trickled, then stopped. The
+  buffer ran dry at 320 s, the 20 s no-data timeout fired at 342 s, and
+  the second attempt was playing at 365 s, with no decoder errors (so
+  mpg123 resyncs fine). About 45 s of silence in all, since a trickle
+  doesn't trip the timeout; a low-speed limit would cut that (not done,
+  proposed).
+- **Wrapped URLs:** two stations' addresses were email link-scanner
+  wrappers (Proofpoint urldefense, Outlook safelinks), which send every
+  connection through the scanner first. `rb_to_stations.py` now unwraps
+  them; the 00.22 list is rebuilt from the same 2026-10-21 snapshot.
+
+## Build 00.23: faster reconnect on a stalled stream
+
+- The network thread now treats a stream as dropped when under 1 KB/s
+  arrives for 10 s (curl low-speed limit), instead of after 20 s of no
+  data at all. A full buffer still reads at the stream's bitrate (16 kbps
+  at the slowest in the list, 2 KB/s), so healthy streams don't trip it.
+  The 00.21 stall would have reconnected roughly 25 s sooner.
+- Uncertain on hardware: a station sending under 8 kbps would now
+  reconnect every 10 s. None in the list does, but the Notes bitrate is
+  unknown ("?k") for 809 stations.
+- The bundled list's header now says 00.23 (same snapshot as 00.22).

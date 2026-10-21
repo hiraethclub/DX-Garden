@@ -191,9 +191,32 @@ def clean_name(s):
     return shorten(clean(s, 300).lstrip("#").strip(), 100)
 
 
+def unwrap_url(u):
+    """The real address inside an email link-scanner wrapper (Proofpoint
+    urldefense v2, Outlook safelinks), which would route every connection
+    through the scanner. Other URLs come back unchanged."""
+    try:
+        parts = urllib.parse.urlsplit(u)
+    except ValueError:
+        return u
+    host = parts.netloc.lower()
+    query = urllib.parse.parse_qs(parts.query)
+    if host.endswith("urldefense.proofpoint.com") and parts.path.startswith("/v2/url") \
+            and query.get("u"):
+        # v2 encodes "/" as "_" and other characters as "-XX" (hex).
+        inner = query["u"][0].replace("_", "/")
+        inner = "".join(
+            chr(int(seg[:2], 16)) + seg[2:] if i and len(seg) >= 2 else ("-" + seg if i else seg)
+            for i, seg in enumerate(inner.split("-")))
+        return inner
+    if host.endswith("safelinks.protection.outlook.com") and query.get("url"):
+        return query["url"][0]
+    return u
+
+
 def clean_url(u):
     """The stream URL, or None if it can't be written safely."""
-    u = (u or "").strip()
+    u = unwrap_url((u or "").strip())
     if not (u.lower().startswith("http://") or u.lower().startswith("https://")):
         return None
     if any(unicodedata.category(c) == "Cc" for c in u) or "|" in u:
