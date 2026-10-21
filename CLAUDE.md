@@ -18,9 +18,9 @@ On the Vita, stations come only from my own station file and imports:
 - M3U/PLS files placed in `ux0:data/dxgarden/import/` (these lack coordinates; let me assign a place to them in the app).
 - Add station by URL with the on-screen keyboard (IME dialog).
 
-**One directory is allowed, as a desktop snapshot only: Radio Browser (radio-browser.info).** A desktop script (`tools/rb_to_stations.py`) downloads stations from it once and writes a normal `stations.txt`, which I copy to the Vita myself. The Vita app never contacts Radio Browser, and nothing from it ships in the VPK.
+**One directory is allowed, as a desktop snapshot only: Radio Browser (radio-browser.info).** A desktop script (`tools/rb_to_stations.py`) downloads stations from it once and writes a normal `stations.txt`. The Vita app never contacts Radio Browser.
 
-Do not bundle any station list in the VPK, and do not use Radio Garden's own API or data in any form (including entries that point back at Radio Garden). Ask me before using any other directory, and before adding any live lookup from the Vita (including to Radio Browser).
+**Bundled list (my decision, 2026-10-21):** one snapshot made with that script (`--bundle <version>`) ships in the VPK as `assets/stations/stations.txt`. On first run it becomes `ux0:data/dxgarden/stations.txt`; the app never overwrites an existing one. The README says the list is correct as of the release date and that changes are the user's responsibility. Country labels follow where a station actually is, whatever Radio Browser says (my decision): Ukraine's territory, including Crimea and the occupied east and south, is labelled Ukraine; Palestinian territory is labelled Gaza or Occupied West Bank; UK stations are labelled by nation (England, Scotland, Wales, Northern Ireland), and the Crown Dependencies by their own names (Isle of Man, Jersey, Guernsey). Bundle no other list, and do not use Radio Garden's own API or data in any form (including entries that point back at Radio Garden). Ask me before using any other directory, and before adding any live lookup from the Vita (including to Radio Browser).
 
 Keep all station loading behind a `station_source` interface in `core/` so another source could be added later, but only if I explicitly decide to. If a feature would need a directory or a live lookup, stop and ask me.
 
@@ -99,4 +99,4 @@ Any world map or globe texture must be public domain or have a licence that allo
 - Before each milestone, give a short plan; after it, give me a test checklist for the Vita.
 - Bump the version number in the VPK each build so I can tell builds apart.
 - If something is uncertain on real hardware (performance, decoder speed, standby behaviour), say so instead of guessing, and suggest how I can test it.
-- Keep the README honest: a player and explorer for user-supplied streams, with no station directory included in the app. A desktop script can build a list from Radio Browser.
+- Keep the README honest: a player and explorer for streams, shipping a dated Radio Browser snapshot as a default list that is the user's to maintain. The app never fetches a directory. A desktop script can build a fresh list from Radio Browser.

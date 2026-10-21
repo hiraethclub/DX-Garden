@@ -10,7 +10,9 @@
 
 #include "config.h"
 #include "log.h"
+#include "station_source.h"
 #include "stations_file.h"
+#include "text.h"
 #include "userlist.h"
 
 void fs_mkdir(const char *path)
@@ -120,6 +122,34 @@ static void create_if_missing(const char *path, const char *content)
         LOG("first run: created %s", path);
 }
 
+/* stations.txt from the list shipped in the VPK, below the format notes
+ * and examples. Only when the user has none: theirs is never replaced. */
+static void create_stations(void)
+{
+    size_t len, hl = strlen(STATIONS_EXAMPLE);
+    read_status st;
+    char *list, *all;
+
+    if (fs_exists(PATH_STATIONS))
+        return;
+    list = read_file(BUNDLED_STATIONS, STATION_FILE_MAX, &len, &st);
+    all = list ? malloc(hl + 2 + len) : NULL;
+    if (!all) {
+        LOG("first run: no bundled station list, writing the example file");
+        free(list);
+        create_if_missing(PATH_STATIONS, STATIONS_EXAMPLE);
+        return;
+    }
+    memcpy(all, STATIONS_EXAMPLE, hl);
+    memcpy(all + hl, "#\n", 2);
+    memcpy(all + hl + 2, list, len);
+    if (fs_write_file(PATH_STATIONS, all, hl + 2 + len) == 0)
+        LOG("first run: created %s from the bundled list (%u KB)", PATH_STATIONS,
+            (unsigned)(len / 1024));
+    free(all);
+    free(list);
+}
+
 void fs_first_run(void)
 {
     config def;
@@ -128,7 +158,7 @@ void fs_first_run(void)
     fs_mkdir("ux0:data");
     fs_mkdir(DATA_DIR);
     fs_mkdir(IMPORT_DIR);
-    create_if_missing(PATH_STATIONS, STATIONS_EXAMPLE);
+    create_stations();
     create_if_missing(PATH_FAVOURITES, FAVOURITES_HEADER);
     create_if_missing(PATH_RECENT, RECENT_HEADER);
 

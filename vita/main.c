@@ -4,12 +4,14 @@
 
 #include <curl/curl.h>
 #include <psp2/ctrl.h>
+#include <psp2/io/fcntl.h>
 #include <psp2/kernel/cpu.h>
 #include <psp2/kernel/processmgr.h>
 #include <psp2/kernel/threadmgr.h>
 #include <psp2/net/net.h>
 #include <psp2/net/netctl.h>
 #include <psp2/power.h>
+#include <psp2/rtc.h>
 #include <psp2/sysmodule.h>
 
 #include "app.h"
@@ -24,6 +26,12 @@
 
 #define RING_CAPACITY (512 * 1024) /* about 32 s at 128 kbps */
 #define STATS_INTERVAL_US (10 * 1000 * 1000)
+#define SLOW_FRAME_US (250 * 1000)
+/* The wall clock runs on through standby, process time doesn't: a gap
+ * between them this big means the Vita was suspended. */
+#define RESUME_JUMP_US (3 * 1000 * 1000)
+#define RESUME_DEBOUNCE_US (5 * 1000 * 1000)
+#define SCREEN_OFF_POLL_US (30 * 1000)
 
 static char net_memory[1024 * 1024];
 
@@ -76,6 +84,33 @@ static void poll_wifi(sys_status *s)
         LOG("wifi: %s %s", s->wifi_connected ? "connected" : "disconnected", s->ip);
 }
 
+/* Power events, collected by the callback (it runs in the main thread
+ * inside sceKernelCheckCallback). */
+static volatile unsigned power_flags;
+
+static int power_cb(int notify_id, int notify_count, int arg, void *user)
+{
+    (void)notify_id;
+    (void)notify_count;
+    (void)user;
+    power_flags |= (unsigned)arg;
+    return 0;
+}
+
+static void power_setup(void)
+{
+    SceUID cb = sceKernelCreateCallback("dxg_power", 0, power_cb, NULL);
+    int rc = cb >= 0 ? scePowerRegisterCallback(cb) : cb;
+    if (rc < 0)
+        LOG("power: no callback (0x%08X); resume is found by the clock alone", rc);
+}
+
+static SceUInt64 wall_us(void)
+{
+    SceRtcTick t;
+    return sceRtcGetCurrentTick(&t) >= 0 ? t.tick : 0;
+}
+
 static void fatal_screen(const char *title, const char *detail)
 {
     SceCtrlData pad;
@@ -101,9 +136,15 @@ int main(void)
     const char *state_names[] = { "idle",    "connecting", "buffering",   "playing",
                                   "stopping", "error",     "reconnecting" };
     player_state last_state = PLAYER_IDLE;
+    SceUInt64 last_wall = 0, last_proc = 0, last_resume = 0;
+    int was_off = 0;
 
     fs_mkdir("ux0:data");
     fs_mkdir(DATA_DIR);
+    if (fs_exists(PATH_LOG)) {
+        sceIoRemove(PATH_LOG_PREV);
+        sceIoRename(PATH_LOG, PATH_LOG_PREV);
+    }
     log_open(PATH_LOG);
     LOG("DX Garden " DXG_VERSION " starting");
     /* The main loop keeps core 0; the player threads use cores 1 and 2. */
@@ -165,16 +206,50 @@ int main(void)
     poll_wifi(&sys);
     if (!sys.wifi_connected)
         LOG("wifi: not connected at start");
+    power_setup();
     rate_time = stats_time = sceKernelGetProcessTimeWide();
     gfx_reset_stats(); /* so loading doesn't count as one long frame */
 
     for (;;) {
-        SceUInt64 now;
+        SceUInt64 now, frame_t = sceKernelGetProcessTimeWide(), update_us;
+
+        /* Standby, or a trip to the home screen: found by a power event or
+         * by the wall clock running ahead of process time. */
+        sceKernelCheckCallback();
+        {
+            SceUInt64 w = wall_us();
+            unsigned flags = power_flags;
+            const char *why = NULL;
+            long long gap = 0;
+
+            power_flags = 0;
+            if (flags)
+                LOG("power: event 0x%08X", flags);
+            if (flags & (SCE_POWER_CB_SYSTEM_RESUME | SCE_POWER_CB_APP_RESUME))
+                why = "power event";
+            if (w && last_wall) {
+                gap = (long long)(w - last_wall) - (long long)(frame_t - last_proc);
+                if (gap > RESUME_JUMP_US && !why)
+                    why = "clock";
+            }
+            last_wall = w;
+            last_proc = frame_t;
+            if (why && (last_resume == 0 || frame_t - last_resume > RESUME_DEBOUNCE_US)) {
+                last_resume = frame_t;
+                LOG("power: resumed (found by %s, clock gap %lld s), battery %d%%", why,
+                    gap / 1000000, scePowerGetBatteryLifePercent());
+                poll_wifi(&sys);
+                player_get_status(&st);
+                app_on_resume(&st);
+                gfx_reset_stats();
+            }
+        }
 
         sceCtrlPeekBufferPositive(0, &pad, 1);
         player_get_status(&st);
         if (app_update(&pad, &st))
             break;
+        update_us = sceKernelGetProcessTimeWide() - frame_t;
 
         player_update();
         player_get_status(&st);
@@ -204,12 +279,14 @@ int main(void)
                 unsigned avg = st.bytes_in >= stats_bytes
                     ? (unsigned)((st.bytes_in - stats_bytes) * 8 * 1000 / (now - stats_time))
                     : 0;
-                LOG("stats: fill %u KB, underruns %u, in %u kbps (10 s avg), decode CPU %u%%",
-                    (unsigned)(st.fill / 1024), st.underruns, avg, st.decode_load_pct);
+                LOG("stats: fill %u KB, underruns %u, in %u kbps (10 s avg), decode CPU %u%%, "
+                    "battery %d%%%s",
+                    (unsigned)(st.fill / 1024), st.underruns, avg, st.decode_load_pct,
+                    scePowerGetBatteryLifePercent(), app_screen_off() ? ", screen off" : "");
             }
             stats_bytes = st.bytes_in;
             stats_time = now;
-            {
+            if (!app_screen_off()) {
                 gfx_stats g;
                 gfx_take_stats(&g);
                 unsigned shaped, hits;
@@ -221,11 +298,31 @@ int main(void)
             }
         }
 
-        /* Keep the Vita from suspending while a stream is open. */
-        if (st.state != PLAYER_IDLE && st.state != PLAYER_ERROR)
+        /* While a stream is open, keep the Vita from suspending and from
+         * switching the display off: either one silences the app's audio
+         * (seen in 00.19). It may still dim. */
+        if (st.state != PLAYER_IDLE && st.state != PLAYER_ERROR) {
             sceKernelPowerTick(SCE_KERNEL_POWER_TICK_DISABLE_AUTO_SUSPEND);
+            sceKernelPowerTick(SCE_KERNEL_POWER_TICK_DISABLE_OLED_OFF);
+        }
 
-        app_draw(&st, &sys);
+        if (app_screen_off()) {
+            /* Dark screen: black frames, then poll the buttons gently. */
+            app_draw(&st, &sys);
+            was_off = 1;
+            sceKernelDelayThread(SCREEN_OFF_POLL_US);
+        } else {
+            SceUInt64 total;
+            if (was_off) {
+                gfx_reset_stats();
+                was_off = 0;
+            }
+            app_draw(&st, &sys);
+            total = sceKernelGetProcessTimeWide() - frame_t;
+            if (total > SLOW_FRAME_US)
+                LOG("slow frame: %u ms (input %u ms) in %s", (unsigned)(total / 1000),
+                    (unsigned)(update_us / 1000), app_where());
+        }
     }
 
     LOG("quitting");

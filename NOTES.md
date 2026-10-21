@@ -945,3 +945,169 @@ the AAC message, 404, HLS, and DNS retries with back-off. Fixes:
     the decode thread before each 1024-sample grain (about 23 ms).
 - **Layout:** the menu rows are 42 px (was 48) to fit up to 10 entries;
   Settings rows are 29 px (was 30) for the extra button row.
+
+## M5 part 2: screen off, standby and resume (build 00.18)
+
+- **What's possible on the Vita (investigated):**
+  - `scePowerRequestDisplayOff()` turns the display off while the app keeps
+    running, so audio continues. That is "Turn the screen off" in the
+    START menu. Drawing stops while it's off; the loop polls buttons every
+    30 ms instead. Any button or front-touch wakes it, and the waking press
+    is swallowed.
+  - Real standby (power button) and the PS button both suspend the app, so
+    audio stops. Playing in the background like the Music app would need
+    system privileges that ordinary homebrew doesn't have. Not attempted.
+  - The Vita's own idle screen-off still happens while playing (we only
+    block auto-standby with `SCE_KERNEL_POWER_TICK_DISABLE_AUTO_SUSPEND`).
+- **Resume:** found two ways, whichever comes first, at most once per 5 s:
+  - a power callback (`SCE_POWER_CB_SYSTEM_RESUME` or `APP_RESUME`; both
+    flags are marked "to confirm" in the SDK headers), and
+  - the wall clock (RTC) running more than 3 s ahead of process time, which
+    stops during standby.
+  - Then, if a station was on (not stopped, not in error), it is started
+    again from its address, because its connection is dead. Wi-Fi may take
+    a few seconds to come back; the reconnect back-off covers that.
+  - The sleep timer runs on process time, so it pauses during standby.
+- **Logging:**
+  - `power: event 0x…` for every callback, `power: resumed (found by …,
+    clock gap N s)`, `screen: off/on` with the battery level, and the
+    battery level and screen state on each 10 s `stats:` line, so battery
+    use with the screen off can be compared.
+  - `slow frame: N ms (input M ms) in <screen>` for any frame over 250 ms.
+  - `ime: open` and `ime: confirmed`.
+  - The previous run's log is kept as `log-<build>-previous.txt` (00.17's
+    search was tested in an earlier run, and its log line was overwritten).
+- **Uncertain on hardware:**
+  - Whether buttons are read with the display off (if not, only the power
+    button or PS button would bring it back).
+  - Whether the system turns the display back on by itself (we'd then
+    draw nothing until a button is pressed).
+  - Whether Wi-Fi stays connected with the display off.
+  - Which power callback flags actually arrive on resume.
+
+## Build 00.19: screen-off fix
+
+- **00.18 bug:** "Turn the screen off" turned straight back on, 30 ms
+  later. With the display off the system takes the controls and sets
+  `SCE_CTRL_INTERCEPTED` (0x10000) in the button word; the app counted that
+  bit as a button press. Input now only looks at the real buttons, so
+  status bits (intercepted, headphones, volume, power) can't act as
+  presses anywhere.
+- Since the system may hold the controls while the display is off, the app
+  also wakes when the controls come back (intercepted bit clears), not
+  only on a press it sees itself.
+- **Seen in the 00.18 log:**
+  - Display off sends power event 0x00400080 (APP_SUSPEND plus 0x80);
+    display on sends 0x00800080 (APP_RESUMING plus 0x80). 0x80 is set in
+    every event, including one at start-up. Neither is treated as a
+    resume, which is right: the stream was fine.
+  - Open question: does APP_SUSPEND on display off mean the system will
+    actually suspend the app after a while? The 10 s `stats:` lines with
+    "screen off" will show whether audio data keeps arriving.
+  - The first drawn frame takes about 1.2 s (`slow frame: 1228 ms (input
+    6 ms) in globe`), in drawing, not input. It is start-up only; most
+    likely vitaGL setting up shaders or textures on first use.
+
+## Build 00.20: dark screen instead of display off
+
+- **00.19 on hardware:** with the display off (`scePowerRequestDisplayOff`)
+  the audio faded to silence within moments, ordinary buttons did nothing,
+  and only PS or power brought it back (with the audio). The system treats
+  display-off as suspending the app (power event APP_SUSPEND), fades its
+  audio and keeps the controls. Ordinary homebrew can't opt out. The 00.19
+  logs didn't reach the PC.
+- **So "Dark screen" replaces "Turn the screen off":**
+  - Three black frames (one per buffer in the swap chain), then no more
+    drawing; the display keeps showing black. The loop polls input every
+    30 ms. Any real button or a front touch brings the screen back, and
+    that press is swallowed.
+  - On the PCH-1000's OLED, black pixels are unlit, so most of the
+    display's power is saved. Lowering brightness as well was considered
+    and dropped: `sceAVConfigSetDisplayBrightness` exists, but the current
+    level can't be read back (the registry API is kernel-only), so it
+    couldn't be restored; on an all-black OLED screen it would make
+    little difference anyway.
+  - Unsure: the battery saved compared with drawing the globe. Compare the
+    battery % on the `stats:` lines.
+- **System screen-off blocked while playing:** the Vita's own idle
+  display-off would silence the app the same way, so while a stream is open
+  the loop also ticks `SCE_KERNEL_POWER_TICK_DISABLE_OLED_OFF`. Dimming is
+  still allowed. When playback stops (including by the sleep timer), the
+  usual screen-off and standby come back.
+- **Standby and PS-button resume:** still untested (no 00.19 log).
+
+## Build 00.21: bundled station list, with positions checked
+
+- **Decision by the tester (2026-10-21):** ship a Radio Browser snapshot
+  in the VPK as the default list. This changes the earlier rule (no list
+  in the VPK); CLAUDE.md, the README and the About screen now say so.
+  - Licences: Radio Browser's API docs say it "is completely free and open
+    source" and that "You may use it in free and non free software" and
+    "mirror all its data"; no formal data licence is named. GeoNames town
+    names are CC BY 4.0 (credited in the file header, README and About).
+    Natural Earth is public domain.
+  - `assets/stations/stations.txt` goes into the VPK as `app0:stations.txt`.
+    On first run, if `ux0:data/dxgarden/stations.txt` doesn't exist, it is
+    written as the format notes and examples followed by the bundled list.
+    An existing file is never touched, so testers keep theirs; delete it to
+    get the bundled one.
+  - The header says which release it shipped with, the date, and that
+    changes are the user's to make.
+- **The list:** a fresh snapshot (2026-10-21), MP3 only, 7,538 stations in
+  2,806 places, 162 countries. The test stations from the M4/fonts test
+  files aren't in it (they were only ever in my combined test file), and
+  test broadcasts (the word "test" in the name) are now skipped.
+- **Positions** (`rb_to_stations.py --borders`): a station is fine if it is
+  inside its country's Natural Earth shape (or a dependency of the same
+  state, like the Isle of Man for GB), or within 30 km of one of its towns.
+  Otherwise, in order:
+  1. swapped or sign-flipped coordinates that land near one of its towns
+     (8 stations);
+  2. out at sea within 200 km of its coast: the nearest town ashore (18);
+  3. within 300 km of its own country: left exactly as given (border
+     towns, and disputed areas, where relabelling would take a side);
+  4. a town named in the station's name: 50,000+ people in its country,
+     200,000+ abroad, so "Forest" and "Roman" aren't read as towns (7);
+  5. the pin on a 40,000+ city in another country: kept, and the country
+     label corrected to that country, unless the name mentions the stated
+     country (14; e.g. DK/DZ/NE for Germany, BQ for the Netherlands);
+  6. Radio Browser's region as a town name (8); 7. the capital (33).
+  Each change is explained in the station's Notes.
+- **Known misses:** "Radio Caprice - Chicago Blues" (a Russian genre
+  channel) is placed in Chicago; "057 radio" (Zadar) is labelled Gabon,
+  where its pin is; a few Berlin-pinned stations keep Radio Browser's
+  "Denmark" label (step 3). Stations pinned at the middle of their country
+  (central Australia, Kazakhstan) stay there.
+- **Script changes:** retries each server (2, 4, 8 s) before moving on,
+  since one dropped connection ended a run; `--save-raw` / `--from-raw`
+  rebuild offline from a saved download.
+- **Country labels by territory (tester's decision, 2026-10-21):** "I am
+  taking a political side." Stations whose position is in Ukraine,
+  including Crimea and the occupied east and south, are labelled Ukraine;
+  stations in Palestinian territory are labelled Gaza or Occupied West
+  Bank. This overrides Radio Browser and the earlier border-area rule.
+  - Decided by the nearest GeoNames town within 15 km (GeoNames has
+    Crimean towns as UA and East Jerusalem neighbourhoods as PS), else by
+    the Natural Earth shape, which puts Crimea in Russia, so there is an
+    explicit Crimea box. Gaza and the West Bank are told apart by longitude
+    (34.6° E).
+  - In this snapshot: 4 relabelled to Ukraine (Simferopol, Melitopol,
+    Mariupol, Henichesk) and 2 to Occupied West Bank (Battir, and KAN
+    Gimel, an Israeli public station whose pin is at Tulkarm). No stations
+    are pinned in Gaza.
+  - Left as Israel: Radios 100FM (pinned near Kfar Saba; the coarse 1:50m
+    shape puts it just inside the West Bank, GeoNames doesn't) and
+    Mizrahit FM (no real position: placed at GeoNames' Jerusalem point
+    from Radio Browser's region).
+- **UK nations (tester's decision, 2026-10-21):** UK stations are labelled
+  England, Scotland, Wales or Northern Ireland, from the nearest GeoNames
+  town's admin1 code (ENG/SCT/WLS/NIR) within 15 km, or the nearest UK town
+  within 60 km for remote pins. The Crown Dependencies aren't in the UK
+  and get their own names: Isle of Man, Jersey, Guernsey. In this
+  snapshot: England 277, Scotland 17, Wales 13, Northern Ireland 1, Isle of
+  Man 3, Jersey 2, Guernsey 1.
+  - Still "United Kingdom": UK Pressure Radio, whose Radio Browser pin is
+    in Cherbourg, France (kept as given by the border-area rule).
+  - Positions come from Radio Browser, so a wrong pin gives a wrong nation:
+    "Hits Hull & East York" is pinned in Bethesda (Wales), "Radio X" in
+    Pwllheli (Wales).

@@ -3,18 +3,25 @@
 A radio player and explorer for the PS Vita (homebrew, HENkaku/ensō), in the
 spirit of spinning a globe and listening to what's on air somewhere else.
 
-**It plays streams you supply yourself.** No stations ship with the app,
-and the app never fetches a station directory. Stations come from your own
-`stations.txt`, from M3U/PLS files you drop in, or from URLs you type in.
+**It comes with a station list, and the list is yours.** The VPK includes
+about 7,500 MP3 stations from a snapshot of
+[Radio Browser](https://www.radio-browser.info), a community station
+directory, which become your `stations.txt` the first time the app starts.
+The app never goes online to fetch a directory: everything else comes from
+your own `stations.txt`, M3U/PLS files you drop in, or URLs you type in.
 
-If you want a ready-made list, a desktop script can build a `stations.txt`
-from a snapshot of [Radio Browser](https://www.radio-browser.info), a
-community station directory. You run it on your computer and copy the file
-to the Vita yourself (see "Building a station list" below).
+**About the bundled list:** it was correct as of the date of the release it
+shipped with (the date is at the top of the file). Radio stations move,
+change address and close, and Radio Browser's entries are written by its
+users, so some stations will stop working or be placed oddly over time.
+Keeping the list up to date, and any changes you make to it, are your
+responsibility. The app never overwrites your `stations.txt`; delete it
+and restart the app to get the bundled list back, or build a fresh one
+with the desktop script (see "Building a station list" below).
 
 ## Status
 
-Early development (build 00.17). It plays MP3 streams over HTTP and HTTPS
+Early development (build 00.21). It plays MP3 streams over HTTP and HTTPS
 from your own station list, which you can browse by country, city or genre,
 with favourites and recently played. Imported playlists can be given a place
 in the app. Build 00.07 adds the globe: turn it and stop the crosshair on a
@@ -24,7 +31,13 @@ Arabic, Hebrew, Thai, Georgian, Ethiopic, Chinese, Japanese and Korean. It shows
 station sends one, follows playlist links, and reconnects by itself when a
 stream drops. It plays MP3 only: AAC, Ogg and HLS stations say so instead
 of playing (see `NOTES.md`). The START menu has search by station or place
-name, a jump to a random place, and a sleep timer.
+name, a jump to a random place, a sleep timer, and "Dark screen", which
+turns the screen black (on the OLED Vita that saves most of the power the
+display uses) and keeps the radio playing until you press a button. The
+Vita won't switch its display off by itself while a station plays, because
+that would silence the app. Real standby (the power button) or leaving the
+app with the PS button pauses it, as with any homebrew app; when you come
+back, the station reconnects by itself.
 
 ## Building
 
@@ -57,15 +70,23 @@ has no city field, so the script fills it from a GeoNames cities file you
 download first (https://download.geonames.org/export/dump/cities1000.zip),
 falling back to Radio Browser's region (state or province).
 
+With `--borders` and Natural Earth's country shapes
+(`ne_50m_admin_0_countries.geojson`, public domain), it also checks that
+each station is in its own country and fixes the usual mistakes: swapped
+or sign-flipped coordinates, pins out at sea, a town given in the station's
+name, and country codes picked wrongly from a list. Anything it changes is
+explained in the station's Notes.
+
 ```sh
-python3 tools/rb_to_stations.py --geonames cities1000.zip -o stations.txt
-python3 tools/rb_to_stations.py --help   # countries, codecs, bitrate, tag, --max, --check
+python3 tools/rb_to_stations.py --geonames cities1000.zip \
+    --borders ne_50m_admin_0_countries.geojson --max 10000 -o stations.txt
+python3 tools/rb_to_stations.py --help   # countries, codecs, bitrate, tag, --check, --save-raw
 ```
 
 Copy the result to `ux0:data/dxgarden/stations.txt`. It keeps MP3
-stations by default, since other formats arrive in a later milestone.
-Station data is as good as Radio Browser's: some streams will be dead or
-placed oddly.
+stations by default, since that is the only format the app plays.
+The bundled list was made this way, with `--bundle <version>` for its
+header.
 
 ## Files on the Vita
 
@@ -78,7 +99,8 @@ All in `ux0:data/dxgarden/`. They are created on first run if missing.
   "Unplaced" until you give them a place in the app.
 - `favourites.txt`, `recent.txt`: managed by the app (URLs, one per line).
 - `config.ini`: settings.
-- `log-<build>.txt`: log of the last run of that build, e.g. `log-00.04.txt`.
+- `log-<build>.txt`: log of the last run of that build, e.g. `log-00.04.txt`,
+  and `log-<build>-previous.txt` for the run before it.
 
 ## Credits and licences
 
@@ -91,9 +113,12 @@ All in `ux0:data/dxgarden/`. They are created on first run if missing.
 - Text shaping: HarfBuzz (MIT) and FriBidi (LGPL 2.1), linked from VitaSDK's
   packages.
 - LiveArea art is drawn by `tools/make_livearea.py` for this project.
-- Station lists made with `tools/rb_to_stations.py` come from Radio Browser
-  (radio-browser.info). City names in them come from GeoNames
-  (geonames.org), licensed CC BY 4.0. Neither is included in the app.
+- The bundled station list (`assets/stations/stations.txt`, shipped in the
+  VPK) and lists made with `tools/rb_to_stations.py` come from Radio
+  Browser (radio-browser.info), whose API documentation says it may be used
+  in free and non-free software and its data mirrored. Town names in them
+  come from GeoNames (geonames.org), licensed CC BY 4.0. Positions are
+  checked against Natural Earth country shapes (public domain).
 - The globe map (`assets/map/world.png`) is drawn by `tools/make_map.py`
   from [Natural Earth](https://www.naturalearthdata.com) 1:50m data, which
   is in the public domain.

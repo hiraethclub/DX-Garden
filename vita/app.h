@@ -22,4 +22,12 @@ void app_shutdown(void);
 int app_update(const SceCtrlData *pad, const player_status *st);
 void app_draw(const player_status *st, const sys_status *sys);
 
+/* 1 while the screen is off by request: skip drawing. Any button wakes it. */
+int app_screen_off(void);
+/* After standby or a return from the home screen: restarts the station
+ * that was on, since its connection is dead. */
+void app_on_resume(const player_status *st);
+/* What is on screen ("globe", "list", "menu", ...), for the log. */
+const char *app_where(void);
+
 #endif

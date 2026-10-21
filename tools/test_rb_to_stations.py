@@ -25,7 +25,7 @@ class Args:
 def station(**kw):
     s = {
         "stationuuid": "u-%s" % kw.get("name", "x"),
-        "name": "Test FM",
+        "name": "Sample FM",
         "url_resolved": "http://example.com/stream",
         "country": "Germany",
         "countrycode": "DE",
@@ -127,6 +127,160 @@ class CityLookup(unittest.TestCase):
     def test_date_line(self):
         self.assertEqual(self.c.nearest(-16.81, 179.99, 30)[0], "Taveuni")
 
+    def test_positions(self):
+        check = self.c.check_position
+        self.assertEqual(check(52.50, 13.40, "DE", ""), (52.50, 13.40, "ok", "DE"))
+        # Near a German town just over the border counts as in the country.
+        self.assertEqual(check(48.58, 7.75, "DE", "")[2], "ok")
+        # Common typing mistakes are put right.
+        self.assertEqual(check(13.40, 52.50, "DE", ""), (52.50, 13.40, "swapped", "DE"))
+        self.assertEqual(check(52.50, -13.40, "DE", ""), (52.50, 13.40, "flipped", "DE"))
+        # In the Atlantic: the region names a town, else the capital.
+        self.assertEqual(check(0.0, -30.0, "DE", "potsdam")[2], "region")
+        self.assertEqual(check(0.0, -30.0, "DE", "Potsdam")[:2], (52.39886, 13.06566))
+        self.assertEqual(check(0.0, -30.0, "DE", "Bavaria")[:3], (52.52437, 13.41053, "capital"))
+        # A big town in the name wins over the region: in its country first,
+        # else anywhere (and the country follows the town).
+        self.assertEqual(check(0.0, -30.0, "DE", "Bavaria", "Radio Potsdam 1")[2:],
+                         ("named", "DE"))
+        self.assertEqual(check(0.0, -30.0, "FJ", "", "Strasbourg Jazz")[2:], ("named", "FR"))
+        self.assertIsNone(self.c.named_town("Sample FM", "DE"))
+        # On a big city in another country: the position stands and the
+        # country is corrected, unless the name insists on its country.
+        self.c.country_names = {"FJ": "Fiji", "DE": "Germany"}
+        self.assertEqual(check(52.52, 13.41, "FJ", ""), (52.52, 13.41, "trusted", "DE"))
+        self.assertEqual(check(52.52, 13.41, "FJ", "", "Radio Fiji Berlin")[2], "named")
+        self.assertEqual(check(52.52, 13.41, "FJ", "", "Fiji One")[2], "capital")
+        # Fiji across the date line is fine.
+        self.assertEqual(check(-16.81, 179.99, "FJ", "")[2], "ok")
+        # Unknown country: kept near any town, dropped at sea.
+        self.assertEqual(check(52.50, 13.40, "XX", "")[2], "ok")
+        self.assertIsNone(check(0.0, -30.0, "XX", ""))
+        self.assertIsNone(check(0.0, -30.0, "", ""))
+
+    def test_convert_moves_and_notes(self):
+        out, skipped = rb.convert([station(name="Lost", geo_lat=0.0, geo_long=-30.0),
+                                   station(name="Atlantis", geo_lat=0.0, geo_long=-30.0,
+                                           countrycode="", stationuuid="u-a",
+                                           url_resolved="http://example.com/a")],
+                                  Args(), self.c)
+        self.assertEqual(len(out), 1)
+        fields = out[0][0].split(" | ")
+        self.assertEqual(fields[3], "Berlin")
+        self.assertEqual((fields[4], fields[5]), ("52.5244", "13.4105"))
+        self.assertIn("the capital", fields[7])
+        self.assertEqual(out[0][3], "capital")
+        self.assertEqual(skipped, {"coordinates in the open sea, no country to fall back on": 1})
+
+
+class BorderCheck(unittest.TestCase):
+    """With country shapes: inside the country counts even far from towns."""
+
+    def setUp(self):
+        import json
+        # A square "Germany" around Berlin/Potsdam with a hole, and a
+        # square "US" far away with no towns in the cities file.
+        feats = [
+            {"properties": {"ISO_A2": "-99", "ISO_A2_EH": "DE"},
+             "geometry": {"type": "Polygon", "coordinates": [
+                 [[12, 51], [15, 51], [15, 54], [12, 54], [12, 51]],
+                 [[14.5, 53.5], [14.9, 53.5], [14.9, 53.9], [14.5, 53.9], [14.5, 53.5]]]}},
+            {"properties": {"ISO_A2": "US"},
+             "geometry": {"type": "MultiPolygon", "coordinates": [
+                 [[[-160, 60], [-150, 60], [-150, 65], [-160, 65], [-160, 60]]]]}},
+        ]
+        fd, self.geo = tempfile.mkstemp(suffix=".geojson")
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump({"features": feats}, f)
+        rows = [("Berlin", "52.52437", "13.41053", "PPLC", "DE", "3426354"),
+                ("Washington", "38.89511", "-77.03637", "PPLC", "US", "689545")]
+        fd, self.path = tempfile.mkstemp(suffix=".txt")
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            for i, (name, lat, lon, code, cc, pop) in enumerate(rows):
+                f.write("\t".join([str(i), name, name, "", lat, lon, "P", code, cc, "", "", "",
+                                   "", "", pop, "", "", "", ""]) + "\n")
+        self.c = rb.Cities(self.path)
+        self.c.borders = rb.Borders(self.geo)
+
+    def tearDown(self):
+        os.unlink(self.geo)
+        os.unlink(self.path)
+
+    def test_borders(self):
+        b = self.c.borders
+        self.assertEqual(b.at(52.5, 13.4), "DE")
+        self.assertIsNone(b.at(53.7, 14.7))  # in the hole
+        self.assertEqual(b.at(62.95, -155.6), "US")
+        self.assertIsNone(b.at(0, -30))
+
+    def test_remote_but_inside(self):
+        # McGrath, Alaska: no town for hundreds of km, but in the US.
+        self.assertEqual(self.c.check_position(62.95, -155.6, "US", "")[2], "ok")
+        # Off the coast, far from any US town: moved.
+        self.assertEqual(self.c.check_position(28.2, -75.47, "US", "")[2], "capital")
+        # At sea off its own coast: brought to the nearest town.
+        self.assertEqual(self.c.check_position(54.2, 13.4, "DE", ""),
+                         (52.52437, 13.41053, "ashore", "DE"))
+        # Just offshore of a harbour town (within 30 km): left alone.
+        self.assertEqual(self.c.check_position(52.70, 13.41, "DE", "")[2], "ok")
+        # Just across a border, in another country's shape: left as given.
+        self.c.borders.shapes.append(("PL", (15, 51, 18, 54), [[[15, 51], [18, 51], [18, 54],
+                                                              [15, 54], [15, 51]]]))
+        self.assertEqual(self.c.check_position(52.5, 16.5, "DE", ""), (52.5, 16.5, "ok", "DE"))
+
+
+class Territory(unittest.TestCase):
+    def setUp(self):
+        rows = [("Simferopol", "44.95", "34.10", "PPLA", "UA", "336460"),
+                ("Taganrog", "47.24", "38.90", "PPL", "RU", "253585"),
+                ("Gaza", "31.50", "34.47", "PPL", "PS", "410000"),
+                ("Ramallah", "31.90", "35.20", "PPLA", "PS", "38998"),
+                ("Wadi al-Joz", "31.79", "35.24", "PPLX0", "PS", "8000"),
+                ("Jerusalem", "31.769", "35.216", "PPLC", "IL", "801000"),
+                ("Cardiff", "51.48", "-3.18", "PPLA", "GB", "447287", "WLS"),
+                ("Inverness", "57.48", "-4.22", "PPL", "GB", "47000", "SCT"),
+                ("Chester", "53.19", "-2.89", "PPL", "GB", "80000", "ENG"),
+                ("Belfast", "54.60", "-5.93", "PPLA", "GB", "345000", "NIR"),
+                ("Douglas", "54.15", "-4.48", "PPLC", "IM", "26218")]
+        fd, self.path = tempfile.mkstemp(suffix=".txt")
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            for i, row in enumerate(rows):
+                name, lat, lon, code, cc, pop = row[:6]
+                admin1 = row[6] if len(row) > 6 else ""
+                f.write("\t".join([str(i), name, name, "", lat, lon, "P", code, cc, "", admin1,
+                                   "", "", "", pop, "", "", "", ""]) + "\n")
+        self.c = rb.Cities(self.path)
+
+    def tearDown(self):
+        os.unlink(self.path)
+
+    def test_labels(self):
+        t = self.c.territory
+        self.assertEqual(t(44.96, 34.11), ("UA", "Ukraine"))
+        self.assertEqual(t(45.5, 33.5), ("UA", "Ukraine"))  # Crimea, no town near
+        self.assertIsNone(t(47.24, 38.90))  # Taganrog, Russia
+        self.assertEqual(t(31.51, 34.46), ("PS", "Gaza"))
+        self.assertEqual(t(31.90, 35.21), ("PS", "Occupied West Bank"))
+        self.assertEqual(t(31.792, 35.242), ("PS", "Occupied West Bank"))
+        self.assertIsNone(t(31.770, 35.214))  # by GeoNames' Jerusalem point: Israel
+        # UK stations by nation.
+        self.assertEqual(t(51.49, -3.17), ("GB", "Wales"))
+        self.assertEqual(t(57.48, -4.22), ("GB", "Scotland"))
+        self.assertEqual(t(57.2, -4.9), ("GB", "Scotland"))  # Highlands, 40 km out
+        self.assertEqual(t(53.19, -2.89), ("GB", "England"))
+        self.assertEqual(t(54.60, -5.93), ("GB", "Northern Ireland"))
+        self.assertEqual(t(54.15, -4.48), ("IM", "Isle of Man"))
+
+    def test_convert_relabels(self):
+        out, _ = rb.convert([station(name="Krym FM", country="Russia", countrycode="RU",
+                                     geo_lat=44.95, geo_long=34.10)], Args(), self.c)
+        f = out[0][0].split(" | ")
+        self.assertEqual((f[2], f[3]), ("Ukraine", "Simferopol"))
+        self.assertIn("(country: Ukraine, where the position is)", f[7])
+        out, _ = rb.convert([station(name="Gaza FM", country="Palestine", countrycode="PS",
+                                     geo_lat=31.50, geo_long=34.47)], Args(), self.c)
+        self.assertEqual(out[0][0].split(" | ")[2], "Gaza")
+
 
 class Convert(unittest.TestCase):
     def test_filters_and_format(self):
@@ -165,7 +319,7 @@ class Convert(unittest.TestCase):
                         codec=["MP3", "AAC", "AAC+", "OGG", "OPUS"][i % 5]) for i in range(20)]
         out, _ = rb.convert(rows, Args(codecs=["aac", "aac+", "ogg", "opus"], max=8), None)
         self.assertEqual(len(out), 8)
-        self.assertTrue(all(c != "MP3" for _, c, _ in out))
+        self.assertTrue(all(c != "MP3" for _, c, _, _ in out))
 
     def test_region_fallback(self):
         # No town nearby: the region names the place, unless it is just the
@@ -181,6 +335,15 @@ class Convert(unittest.TestCase):
     def test_unknown_bitrate_note(self):
         out, _ = rb.convert([station(bitrate=0)], Args(), None)
         self.assertIn("MP3 ?k rb:", out[0][0])
+
+    def test_test_broadcasts_skipped(self):
+        self.assertTrue(rb.is_test("Radyo Dede Test Yayını"))
+        self.assertTrue(rb.is_test("TEST stream"))
+        self.assertFalse(rb.is_test("Testament Radio"))
+        self.assertFalse(rb.is_test("Contest FM"))
+        out, skipped = rb.convert([station(name="My Test")], Args(), None)
+        self.assertEqual(out, [])
+        self.assertEqual(skipped, {"test broadcast": 1})
 
     def test_fields_never_break_the_format(self):
         nasty = station(name="A|B\nC", country="X|Y", tags="a|b,c\nd")

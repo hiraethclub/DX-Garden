@@ -68,6 +68,7 @@ int ime_open(const char *title, const char *initial, ime_kind kind, int max_len)
         return -1;
     }
     active = 1;
+    LOG("ime: open, \"%s\"", title);
     return 0;
 }
 
@@ -100,5 +101,6 @@ int ime_poll(char *out, size_t n)
         return -1;
     }
     utf16_to_utf8(input16, out, n);
+    LOG("ime: confirmed");
     return 1;
 }

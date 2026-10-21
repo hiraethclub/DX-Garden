@@ -7,6 +7,7 @@
 
 #include <psp2/ctrl.h>
 #include <psp2/kernel/processmgr.h>
+#include <psp2/power.h>
 #include <psp2/touch.h>
 
 #include "controls.h"
@@ -41,6 +42,13 @@
 #define ARROW_L_X (SCREEN_W - MARGIN - 170)
 #define ARROW_R_X (SCREEN_W - MARGIN - ARROW_W)
 #define ARROW_Y (GPANEL_Y + 8)
+
+/* Real buttons; the rest of the bits are status (headphones, input
+ * intercepted by the system) and must never count as a press. */
+#define REAL_BUTTONS                                                                     \
+    (SCE_CTRL_SELECT | SCE_CTRL_START | SCE_CTRL_UP | SCE_CTRL_RIGHT | SCE_CTRL_DOWN |   \
+     SCE_CTRL_LEFT | SCE_CTRL_LTRIGGER | SCE_CTRL_RTRIGGER | SCE_CTRL_TRIANGLE |         \
+     SCE_CTRL_CIRCLE | SCE_CTRL_CROSS | SCE_CTRL_SQUARE)
 
 #define STICK_DEAD 0.18f
 #define RECENT_SAVE_US (5 * 1000 * 1000)
@@ -105,6 +113,7 @@ typedef enum {
     MENU_SEARCH,
     MENU_RANDOM,
     MENU_SLEEP,
+    MENU_SCREEN_OFF,
     MENU_ADD_URL,
     MENU_DETAILS,
     MENU_SETTINGS,
@@ -179,6 +188,9 @@ static struct {
     int sleep_idx;
     SceUInt64 sleep_end;
     int sleep_restore; /* volume back to 100 once the stop has finished */
+
+    int screen_off;  /* dark screen: black, drawing paused, audio on */
+    int dark_frames; /* black frames drawn since it went dark */
 } A;
 
 static const int SLEEP_MINUTES[] = { 0, 15, 30, 60, 90 };
@@ -518,6 +530,7 @@ static void open_menu(void)
         A.menu[A.menu_n++] = MENU_RANDOM;
     }
     A.menu[A.menu_n++] = MENU_SLEEP;
+    A.menu[A.menu_n++] = MENU_SCREEN_OFF;
     A.menu[A.menu_n++] = MENU_ADD_URL;
     A.menu[A.menu_n++] = MENU_DETAILS;
     A.menu[A.menu_n++] = MENU_SETTINGS;
@@ -559,6 +572,9 @@ static void menu_label(menu_action a, char *out, size_t n)
         } else {
             snprintf(out, n, "Sleep timer: off");
         }
+        break;
+    case MENU_SCREEN_OFF:
+        snprintf(out, n, "Dark screen (any button turns it back on)");
         break;
     case MENU_ADD_URL:
         snprintf(out, n, "Add station by URL");
@@ -794,6 +810,7 @@ static void browse_input(unsigned p)
 
 static void random_place(void);
 static void sleep_cycle(void);
+static void screen_off(void);
 
 static int menu_input(unsigned p)
 {
@@ -822,6 +839,9 @@ static int menu_input(unsigned p)
     case MENU_SLEEP:
         sleep_cycle();
         A.ov = OV_MENU; /* stays open, so Cross steps through the choices */
+        break;
+    case MENU_SCREEN_OFF:
+        screen_off();
         break;
     case MENU_ADD_URL:
         ime_step(FLOW_ADD_URL, "Stream URL (http:// or https://)", "http://", IME_URL, 500);
@@ -1398,15 +1418,102 @@ static void sleep_update(const player_status *st)
     }
 }
 
+/* ---- screen off and resume ---------------------------------------------- */
+
+/* A black screen rather than the display switched off: with the display
+ * off (00.18/00.19) the system treats the app as suspended, fades its
+ * audio out and keeps the buttons. Black pixels on the PCH-1000's OLED
+ * screen are unlit, so this saves most of the same power. */
+static void screen_off(void)
+{
+    LOG("screen: dark, battery %d%%%s", scePowerGetBatteryLifePercent(),
+        scePowerIsPowerOnline() ? ", charging" : "");
+    A.screen_off = 1;
+    A.dark_frames = 0;
+}
+
+static void screen_on(const char *why)
+{
+    LOG("screen: back on by %s, battery %d%%", why, scePowerGetBatteryLifePercent());
+    A.screen_off = 0;
+    /* Swallow the waking press: buttons still held are ignored until
+     * released, and a touch still down doesn't reach the globe. */
+    A.prev_buttons = 0xFFFFFFFF;
+    {
+        SceTouchData t;
+        int i;
+        if (sceTouchPeek(SCE_TOUCH_PORT_FRONT, &t, 1) >= 0)
+            for (i = 0; i < (int)t.reportNum && i < SCE_TOUCH_MAX_REPORT; i++) {
+                A.touch_seen[t.report[i].id] = 1;
+                A.touch_globe[t.report[i].id] = 0;
+            }
+    }
+}
+
+int app_screen_off(void)
+{
+    return A.screen_off;
+}
+
+void app_on_resume(const player_status *st)
+{
+    /* The system turns the display on when it resumes. */
+    A.screen_off = 0;
+    A.prev_buttons = 0xFFFFFFFF;
+    if (A.np_url[0] && st->state != PLAYER_IDLE && st->state != PLAYER_ERROR) {
+        LOG("resume: restarting %s", A.np_url);
+        if (A.sleep_restore) {
+            player_set_volume(100);
+            A.sleep_restore = 0;
+        }
+        player_start(A.np_url, A.prebuffer);
+    }
+}
+
+const char *app_where(void)
+{
+    if (A.screen_off)
+        return "screen off";
+    if (ime_active())
+        return "keyboard";
+    switch (A.ov) {
+    case OV_MENU:
+        return "menu";
+    case OV_DETAILS:
+        return "player details";
+    case OV_REPORT:
+        return "load report";
+    case OV_PLACE_MENU:
+        return "place menu";
+    case OV_MESSAGE:
+        return "message";
+    case OV_SETTINGS:
+        return "settings";
+    case OV_NONE:
+        break;
+    }
+    return A.mode == MODE_GLOBE ? "globe" : cur()->is_search ? "search results" : "list";
+}
+
 int app_update(const SceCtrlData *pad, const player_status *st)
 {
-    unsigned buttons = pad->buttons;
+    unsigned buttons = pad->buttons & REAL_BUTTONS;
     unsigned pressed = buttons & ~A.prev_buttons;
     int quit = 0;
 
     A.prev_buttons = buttons;
     save_recent_if_due(0);
     sleep_update(st);
+
+    if (A.screen_off) {
+        SceTouchData t;
+        if (pressed)
+            screen_on("a button");
+        else if (sceTouchPeek(SCE_TOUCH_PORT_FRONT, &t, 1) >= 0 && t.reportNum > 0)
+            screen_on("a touch");
+        A.last_frame = sceKernelGetProcessTimeWide();
+        return 0;
+    }
 
     if (ime_active()) {
         char text[1024];
@@ -2042,8 +2149,9 @@ static void draw_about(int x0, int y0, int w, int h)
     gfx_text(x, y, COL_DIM, 19, 0, "Version " DXG_VERSION "   Build " DXG_REVISION);
     y += 34;
     gfx_text_wrap(x, y, w - 64, 26, 3, COL_DIM, 17,
-                  "A radio explorer for the PS Vita. It plays streams you supply yourself: "
-                  "no station directory is included or fetched.");
+                  "A radio explorer for the PS Vita. It comes with a station list from Radio "
+                  "Browser, correct when this version was released; it never goes online to "
+                  "fetch one. The list is yours to edit.");
     y += 86;
     gfx_rect(x, y - 22, w - 64, 1, COL_PANEL_HI);
     gfx_text(x, y + 6, COL_DIM, 17, 0, "Made by");
@@ -2056,8 +2164,9 @@ static void draw_about(int x0, int y0, int w, int h)
     gfx_text(x + 140, y, COL_TEXT, 19, 0, "@hiraeth.clwb");
     y += 52;
     gfx_text_wrap(x, y, w - 64, 22, 3, COL_DIM, 15,
-                  "Map data: Natural Earth (public domain). Fonts: Noto Sans family (SIL OFL 1.1). "
-                  "CA certificates: Mozilla (MPL 2.0).");
+                  "Stations: radio-browser.info. Town names: GeoNames (CC BY 4.0). Map and borders: "
+                  "Natural Earth (public domain). Fonts: Noto Sans (SIL OFL 1.1). CA certificates: "
+                  "Mozilla (MPL 2.0).");
     gfx_hint(x0 + 24, y0 + h - 14, BTN_CIRCLE, "Back");
 }
 
@@ -2141,6 +2250,17 @@ static void draw_settings(void)
 
 void app_draw(const player_status *st, const sys_status *sys)
 {
+    if (A.screen_off) {
+        /* Black into every buffer in the swap chain, then nothing: the
+         * display keeps showing the last frame. */
+        if (A.dark_frames < 3) {
+            gfx_begin();
+            gfx_rect(0, 0, SCREEN_W, SCREEN_H, RGBA8(0, 0, 0, 0xFF));
+            gfx_end();
+            A.dark_frames++;
+        }
+        return;
+    }
     gfx_begin();
     if (A.mode == MODE_GLOBE) {
         double now = now_s();

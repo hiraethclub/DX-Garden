@@ -7,10 +7,14 @@
 #define DATA_DIR "ux0:data/dxgarden"
 #define IMPORT_DIR DATA_DIR "/import"
 #define PATH_STATIONS DATA_DIR "/stations.txt"
+/* The default list shipped in the VPK (tools/rb_to_stations.py --bundle). */
+#define BUNDLED_STATIONS "app0:stations.txt"
 #define PATH_FAVOURITES DATA_DIR "/favourites.txt"
 #define PATH_RECENT DATA_DIR "/recent.txt"
 #define PATH_CONFIG DATA_DIR "/config.ini"
 #define PATH_LOG DATA_DIR "/log-" DXG_VERSION ".txt"
+/* The run before, so testing over several launches keeps two logs. */
+#define PATH_LOG_PREV DATA_DIR "/log-" DXG_VERSION "-previous.txt"
 #define PATH_ADDED_M3U IMPORT_DIR "/added-by-url.m3u"
 
 void fs_mkdir(const char *path);

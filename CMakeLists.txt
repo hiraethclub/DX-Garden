@@ -104,6 +104,7 @@ if(VITA)
         FILE sce_sys/livearea/contents/startup.png sce_sys/livearea/contents/startup.png
         FILE sce_sys/livearea/contents/template.xml sce_sys/livearea/contents/template.xml
         FILE assets/cacert.pem cacert.pem
+        FILE assets/stations/stations.txt stations.txt
         FILE assets/fonts/NotoSans-Regular.ttf fonts/NotoSans-Regular.ttf
         FILE assets/fonts/NotoSans-Bold.ttf fonts/NotoSans-Bold.ttf
         FILE assets/fonts/OFL.txt fonts/OFL.txt
