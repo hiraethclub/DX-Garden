@@ -1217,3 +1217,25 @@ the AAC message, 404, HLS, and DNS retries with back-off. Fixes:
   Swansea at about (176, 364), left of the gate. The horizon to its right
   is now Europe, the Mediterranean, the Black Sea and the Middle East. The
   rings span about x 85-265, clear of a centred 280 px gate.
+
+## Versions: 0.9.0 (build 29) onwards
+
+- **Decision by the tester (2026-10-22):** a release version plus a build
+  number, replacing the single 00.NN that went up every build. The first
+  release is **0.9.0, a public beta**.
+  - `VERSION` holds MAJOR.MINOR.PATCH and changes only for a new release.
+    `BUILD` goes up by one for every build handed over (29 follows 00.28).
+  - CMake checks both, derives the Vita's XX.YY (`param.sfo` APP_VER only
+    takes that form: 0.9.0 -> 00.90, 1.0.1 -> 01.01, 1.2.3 -> 01.23, so
+    minor and patch stay 0-9), and names the VPK
+    `dxgarden-<version>-b<build>.vpk`, or `dxgarden-<version>.vpk` with
+    `-DDXG_RELEASE=ON`.
+  - The app shows "0.9.0 (build 29)" in Player details and About (with the
+    git commit), logs it at start, and names the log
+    `log-0.9.0-b29.txt`. The network user agent says `DXGarden/0.9.0`.
+  - Catch: test builds of one version share the Vita's XX.YY, so the
+    system's app information can't tell them apart; About can.
+  - Releases are tagged `v0.9.0` in git.
+- The bundled list's header now says "Correct as of" the date the Radio
+  Browser snapshot was taken (the saved file's time with `--from-raw`),
+  not the day the file was rebuilt.

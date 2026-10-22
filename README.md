@@ -21,23 +21,39 @@ with the desktop script (see "Building a station list" below).
 
 ## Status
 
-Early development (build 00.28). It plays MP3 streams over HTTP and HTTPS
-from your own station list, which you can browse by country, city or genre,
-with favourites and recently played. Imported playlists can be given a place
-in the app. Build 00.07 adds the globe: turn it and stop the crosshair on a
-place to hear it. Buttons other than Cross and Circle can be remapped
-under START, then Settings. Station names show in Latin, Greek, Cyrillic,
-Arabic, Hebrew, Thai, Georgian, Ethiopic, Chinese, Japanese and Korean. It shows the current track title when the
-station sends one, follows playlist links, and reconnects by itself when a
-stream drops. It plays MP3 only: AAC, Ogg and HLS stations say so instead
-of playing (see `NOTES.md`). The START menu has search by station or place
-name, a jump to a random place, a sleep timer, and "Dark screen", which
-turns the screen black (on the OLED Vita that saves most of the power the
-display uses) and keeps the radio playing until you press a button. The
-Vita won't switch its display off by itself while a station plays, because
-that would silence the app. Real standby (the power button) or leaving the
-app with the PS button pauses it, as with any homebrew app; when you come
-back, the station reconnects by itself.
+**Beta (0.9.0).** All the planned features are in and have been tested on a
+PCH-1000; this release is to collect reports from other Vitas before 1.0.
+
+- Spin a globe and stop the crosshair on a place to hear it, or browse
+  stations by country, city or genre, with favourites and recently played.
+- Search by station or place name, jump to a random place, a sleep timer,
+  and "Dark screen", which turns the screen black (on the OLED Vita that
+  saves most of the display's power) and keeps the radio playing until you
+  press a button.
+- MP3 streams over HTTP and HTTPS, with track titles, playlist links,
+  clear error messages and automatic reconnecting. AAC, Ogg and HLS
+  stations say so instead of playing.
+- Station names in Latin, Greek, Cyrillic, Arabic, Hebrew, Thai, Georgian,
+  Ethiopic, Chinese, Japanese and Korean scripts.
+- Buttons other than Cross and Circle can be remapped (START, then
+  Settings).
+- The Vita won't switch its display off by itself while a station plays,
+  because that would silence the app. Real standby (the power button) or
+  leaving the app with the PS button pauses it, as with any homebrew app;
+  when you come back, the station reconnects by itself.
+
+## Versions
+
+Releases are numbered MAJOR.MINOR.PATCH (`VERSION`), and every build made
+for testing has a build number (`BUILD`) that only goes up. The app, the
+log and test VPKs show both, e.g. "0.9.0 (build 29)" and
+`dxgarden-0.9.0-b29.vpk`; releases are tagged `v0.9.0` in git and their
+VPK is named `dxgarden-0.9.0.vpk` (build with `-DDXG_RELEASE=ON`).
+
+The Vita itself stores a version as XX.YY, so it shows 0.9.0 as 00.90,
+1.0.1 as 01.01 and 1.2.3 as 01.23 (minor and patch go up to 9). Test
+builds of the same version share that number; tell them apart by the
+build number in About.
 
 ## Building
 
@@ -125,8 +141,8 @@ All in `ux0:data/dxgarden/`. They are created on first run if missing.
   "Unplaced" until you give them a place in the app.
 - `favourites.txt`, `recent.txt`: managed by the app (URLs, one per line).
 - `config.ini`: settings.
-- `log-<build>.txt`: log of the last run of that build, e.g. `log-00.04.txt`,
-  and `log-<build>-previous.txt` for the run before it.
+- `log-<version>-b<build>.txt`: log of the last run of that build, e.g.
+  `log-0.9.0-b29.txt`, and `...-previous.txt` for the run before it.
 
 ## Credits and licences
 

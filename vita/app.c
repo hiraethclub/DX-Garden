@@ -1965,7 +1965,8 @@ static void draw_details(const player_status *st, const sys_status *sys)
         gfx_text_fit(64, y, SCREEN_W - 128, COL_DIM, 17, 0, buf);
     }
     y += 26;
-    snprintf(buf, sizeof(buf), "DX Garden " DXG_VERSION "   ARM %d MHz", sys->arm_mhz);
+    snprintf(buf, sizeof(buf), "DX Garden " DXG_VERSION " (build " DXG_BUILD ")   ARM %d MHz",
+             sys->arm_mhz);
     gfx_text(64, y, COL_DIM, 15, 0, buf);
 
     {
@@ -2146,7 +2147,8 @@ static void draw_about(int x0, int y0, int w, int h)
 
     gfx_text(x, y, COL_TEXT, 34, 1, "DX Garden");
     y += 34;
-    gfx_text(x, y, COL_DIM, 19, 0, "Version " DXG_VERSION "   Build " DXG_REVISION);
+    gfx_text(x, y, COL_DIM, 19, 0,
+             "Version " DXG_VERSION " (build " DXG_BUILD ")   Commit " DXG_REVISION);
     y += 34;
     gfx_text_wrap(x, y, w - 64, 26, 3, COL_DIM, 17,
                   "A radio explorer for the PS Vita. It comes with a station list from Radio "

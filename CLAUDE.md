@@ -97,6 +97,6 @@ Any world map or globe texture must be public domain or have a licence that allo
 
 - Explain decisions in plain terms and keep a running `NOTES.md` of design decisions and known issues.
 - Before each milestone, give a short plan; after it, give me a test checklist for the Vita.
-- Bump the version number in the VPK each build so I can tell builds apart.
+- Bump the build number (`BUILD`) for every build so I can tell builds apart; the app, log and VPK name show it. `VERSION` (MAJOR.MINOR.PATCH, minor and patch 0-9, shown by the Vita as XX.YY) changes only when we decide the next release; releases are tagged `vX.Y.Z`.
 - If something is uncertain on real hardware (performance, decoder speed, standby behaviour), say so instead of guessing, and suggest how I can test it.
 - Keep the README honest: a player and explorer for streams, shipping a dated Radio Browser snapshot as a default list that is the user's to maintain. The app never fetches a directory. A desktop script can build a fresh list from Radio Browser.

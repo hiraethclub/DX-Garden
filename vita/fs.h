@@ -12,9 +12,11 @@
 #define PATH_FAVOURITES DATA_DIR "/favourites.txt"
 #define PATH_RECENT DATA_DIR "/recent.txt"
 #define PATH_CONFIG DATA_DIR "/config.ini"
-#define PATH_LOG DATA_DIR "/log-" DXG_VERSION ".txt"
+/* One log per build: log-0.9.0-b29.txt. */
+#define LOG_NAME "log-" DXG_VERSION "-b" DXG_BUILD ".txt"
+#define PATH_LOG DATA_DIR "/" LOG_NAME
 /* The run before, so testing over several launches keeps two logs. */
-#define PATH_LOG_PREV DATA_DIR "/log-" DXG_VERSION "-previous.txt"
+#define PATH_LOG_PREV DATA_DIR "/log-" DXG_VERSION "-b" DXG_BUILD "-previous.txt"
 #define PATH_ADDED_M3U IMPORT_DIR "/added-by-url.m3u"
 
 void fs_mkdir(const char *path);

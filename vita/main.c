@@ -146,7 +146,7 @@ int main(void)
         sceIoRename(PATH_LOG, PATH_LOG_PREV);
     }
     log_open(PATH_LOG);
-    LOG("DX Garden " DXG_VERSION " starting");
+    LOG("DX Garden " DXG_VERSION " (build " DXG_BUILD ") starting");
     /* The main loop keeps core 0; the player threads use cores 1 and 2. */
     {
         int rc = sceKernelChangeThreadCpuAffinityMask(sceKernelGetThreadId(),
@@ -191,7 +191,7 @@ int main(void)
     if (net_init() < 0 || player_init(RING_CAPACITY) < 0) {
         fatal_screen("Could not start",
                      "Networking or the audio player failed to initialise. "
-                     "See the log-" DXG_VERSION ".txt file in ux0:data/dxgarden/ for details.");
+                     "See " LOG_NAME " in ux0:data/dxgarden/ for details.");
         gfx_shutdown();
         log_close();
         sceKernelExitProcess(0);
