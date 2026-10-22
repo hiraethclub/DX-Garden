@@ -1,0 +1,21 @@
+# DX Garden globe test file. Every line reuses the three M1 test streams
+# (Radio Paradise HTTP/HTTPS and KEXP); the ?test= tag only makes each URL
+# unique so it gets its own entry. The cities are spread out to test the
+# globe: close neighbours, the date line, far north and far south.
+Radio Paradise | http://stream.radioparadise.com/mp3-128 | United States | Paradise | 39.7596 | -121.6219 | Eclectic
+Radio Paradise (HTTPS) | https://stream.radioparadise.com/mp3-128 | United States | Paradise | 39.76 | -121.62 | Eclectic
+KEXP | https://kexp-mp3-128.streamguys1.com/kexp128.mp3 | United States | Seattle | 47.6062 | -122.3321 | Indie
+Test Amsterdam | http://stream.radioparadise.com/mp3-128?test=ams | Netherlands | Amsterdam | 52.3676 | 4.9041 | Test
+Test Brussels | http://stream.radioparadise.com/mp3-128?test=bru | Belgium | Brussels | 50.8503 | 4.3517 | Test
+Test Berlin 1 | https://stream.radioparadise.com/mp3-128?test=ber1 | Germany | Berlin | 52.52 | 13.405 | Test
+Test Berlin 2 | https://kexp-mp3-128.streamguys1.com/kexp128.mp3?test=ber2 | Germany | Berlin | 52.52 | 13.405 | Test
+Test Berlin 3 | http://stream.radioparadise.com/mp3-128?test=ber3 | Germany | Berlin | 52.52 | 13.405 | Test
+Test Reykjavik | http://stream.radioparadise.com/mp3-128?test=rey | Iceland | Reykjavik | 64.1466 | -21.9426 | Test
+Test Nairobi | https://stream.radioparadise.com/mp3-128?test=nbo | Kenya | Nairobi | -1.2921 | 36.8219 | Test
+Test Cape Town | http://stream.radioparadise.com/mp3-128?test=cpt | South Africa | Cape Town | -33.9249 | 18.4241 | Test
+Test Buenos Aires | https://kexp-mp3-128.streamguys1.com/kexp128.mp3?test=bue | Argentina | Buenos Aires | -34.6037 | -58.3816 | Test
+Test Tokyo | http://stream.radioparadise.com/mp3-128?test=tyo | Japan | Tokyo | 35.6762 | 139.6503 | Test
+Test Auckland | https://stream.radioparadise.com/mp3-128?test=akl | New Zealand | Auckland | -36.8485 | 174.7633 | Test
+Test Suva | http://stream.radioparadise.com/mp3-128?test=suv | Fiji | Suva | -18.1416 | 178.4419 | Test
+Test Honolulu | https://kexp-mp3-128.streamguys1.com/kexp128.mp3?test=hnl | United States | Honolulu | 21.3069 | -157.8583 | Test
+Test Longyearbyen | http://stream.radioparadise.com/mp3-128?test=lyr | Norway | Longyearbyen | 78.2232 | 15.6267 | Test
