@@ -2,3 +2,4 @@ build/
 build-test/
 logs/
 __pycache__/
+build-release/
