@@ -42,6 +42,44 @@ PCH-1000; this release is to collect reports from other Vitas before 1.0.
   leaving the app with the PS button pauses it, as with any homebrew app;
   when you come back, the station reconnects by itself.
 
+## Installing
+
+You need a PS Vita running HENkaku or ensō with
+[VitaShell](https://github.com/TheOfficialFloW/VitaShell), and Wi-Fi.
+
+1. **The shader compiler, once.** DX Garden draws with vitaGL, which needs
+   the Vita's shader compiler at `ur0:data/libshacccg.suprx`. If you don't
+   have it yet, install and run the ShaRKBR33D homebrew, which extracts it.
+   Without it, DX Garden shows a message and quits.
+2. **Install the VPK.** Copy `dxgarden-0.9.0.vpk` to the Vita and install it
+   with VitaShell.
+3. **Start it.** The first start creates `ux0:data/dxgarden/` with the
+   bundled station list and opens on the globe.
+
+To update, install the new VPK over the old one. Your `stations.txt`,
+favourites, recently played and settings are kept. If the bubble still
+shows old artwork, use VitaShell's "Refresh LiveArea" or reinstall.
+
+## Controls
+
+These are the defaults. Everything except Cross and Circle can be changed
+under START, then Settings. The rear touchpad isn't used.
+
+| | Globe | List |
+|---|---|---|
+| Left stick, d-pad, front touch drag | Turn the globe | Move (d-pad) |
+| Pinch, or R / L | Zoom in / out | |
+| L / R | | Previous / next tab |
+| Cross | Play the place under the crosshair, or show its stations | Open, play |
+| Circle | | Back |
+| Right stick left/right, or the panel arrows | Previous / next station in the place | |
+| Triangle | Favourite | Favourite |
+| Square | Stop | Stop |
+| SELECT | Switch to the list | Switch to the globe |
+| START | Menu: search, random place, sleep timer, dark screen, add a station by URL, settings | Menu |
+
+Stop the crosshair on a place and it starts playing after a moment.
+
 ## Versions
 
 Releases are numbered MAJOR.MINOR.PATCH (`VERSION`), and every build made
@@ -58,19 +96,15 @@ build number in About.
 ## Building
 
 Needs [VitaSDK](https://vitasdk.org) with curl (mbedTLS build), mpg123,
-freetype, vitaGL and libvita2d from vdpm.
-
-**On the Vita, from build 00.05:** `ur0:data/libshacccg.suprx` (the runtime
-shader compiler, extracted with ShaRKBR33D) must be present, because vitaGL
-compiles its shaders on the device. Without it the app shows a message and
-quits.
+freetype, harfbuzz, fribidi, vitaGL and libvita2d from vdpm.
 
 ```sh
 cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=$VITASDK/share/vita.toolchain.cmake -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
 
-This produces `build/dxgarden-<version>.vpk`. Install it with VitaShell.
+This produces `build/dxgarden-<version>-b<build>.vpk`, or
+`build/dxgarden-<version>.vpk` when configured with `-DDXG_RELEASE=ON`.
 
 The portable core has Linux unit tests:
 
@@ -152,8 +186,12 @@ All in `ux0:data/dxgarden/`. They are created on first run if missing.
   (`assets/fonts/OFL.txt`, also shipped in the VPK): Noto Sans, Noto Sans
   Arabic, Hebrew, Thai, Georgian and Ethiopic, and a subset of Noto Sans
   CJK SC made by `tools/make_fonts.py`.
-- Text shaping: HarfBuzz (MIT) and FriBidi (LGPL 2.1), linked from VitaSDK's
-  packages.
+- Libraries linked into the app, from VitaSDK's packages: vitaGL and
+  vitaShaRK (LGPL 3.0), math-neon (MIT), libvita2d (MIT), libcurl (curl
+  licence), Mbed TLS (Apache 2.0), mpg123 (LGPL 2.1), HarfBuzz (MIT),
+  FriBidi (LGPL 2.1), FreeType (FreeType licence), libpng (libpng
+  licence), libjpeg-turbo (IJG and BSD), zlib (zlib licence), bzip2
+  (bzip2 licence) and Zstandard (BSD).
 - LiveArea art: see "LiveArea art" above.
 - The bundled station list (`assets/stations/stations.txt`, shipped in the
   VPK) and lists made with `tools/rb_to_stations.py` come from Radio
