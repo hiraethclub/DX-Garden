@@ -1239,3 +1239,16 @@ the AAC message, 404, HLS, and DNS retries with back-off. Fixes:
 - The bundled list's header now says "Correct as of" the date the Radio
   Browser snapshot was taken (the saved file's time with `--from-raw`),
   not the day the file was rebuilt.
+
+## Release 0.9.0 (beta), 2026-10-22
+
+- Build 30 from commit 173fb6e (same code as tested build 29; README
+  changes only), built with `-DDXG_RELEASE=ON` in `build-release/`.
+  SHA-256 of `dxgarden-0.9.0.vpk`:
+  1844dbe86c0b5d695b61cb8ee53799af4a7b7b2a0105131941f86d1c4a955c21.
+- Merged to `main` through pull request #1 with a merge commit (so 173fb6e,
+  shown in About, stays in history), tagged `v0.9.0`, and published as a
+  GitHub pre-release with the VPK attached:
+  https://github.com/hiraethclub/DX-Garden/releases/tag/v0.9.0
+- Next build numbers continue from 31. `VERSION` stays 0.9.0 until the next
+  release is decided (0.9.1 for fixes, 1.0.0 when the beta is done).
