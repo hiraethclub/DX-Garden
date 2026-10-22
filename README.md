@@ -3,6 +3,8 @@
 A radio player and explorer for the PS Vita (homebrew, HENkaku/ensō), in the
 spirit of spinning a globe and listening to what's on air somewhere else.
 
+![The globe, with the crosshair on Swansea and a Welsh station playing](docs/screenshots/globe.png)
+
 **It comes with a station list, and the list is yours.** The VPK includes
 about 7,500 MP3 stations from a snapshot of
 [Radio Browser](https://www.radio-browser.info), a community station
@@ -23,6 +25,10 @@ with the desktop script (see "Building a station list" below).
 
 **Beta (0.9.0).** All the planned features are in and have been tested on a
 PCH-1000; this release is to collect reports from other Vitas before 1.0.
+
+| Browse by country, city or genre | The START menu |
+|---|---|
+| ![The station list, showing the places in Wales](docs/screenshots/stations-list.png) | ![The menu: search, random place, sleep timer, dark screen and more](docs/screenshots/menu.png) |
 
 - Spin a globe and stop the crosshair on a place to hear it, or browse
   stations by country, city or genre, with favourites and recently played.
