@@ -21,7 +21,7 @@ with the desktop script (see "Building a station list" below).
 
 ## Status
 
-Early development (build 00.25). It plays MP3 streams over HTTP and HTTPS
+Early development (build 00.26). It plays MP3 streams over HTTP and HTTPS
 from your own station list, which you can browse by country, city or genre,
 with favourites and recently played. Imported playlists can be given a place
 in the app. Build 00.07 adds the globe: turn it and stop the crosshair on a
@@ -100,12 +100,19 @@ full-colour PNGs. The Vita needs them as 8-bit palette PNGs at exact sizes:
 | `startup.png` | 280x158 | The gate you tap to start the app |
 
 ```sh
+python3 tools/make_livearea.py render         # the globe artwork (needs numpy)
 python3 tools/make_livearea.py placeholders   # labelled templates with a grid
 python3 tools/make_livearea.py install        # your art in art/livearea/ -> sce_sys/
 ```
 
-`install` checks the sizes, converts to 256 colours (dithered) and copies
-the results into `sce_sys/`; then rebuild. Needs Pillow.
+`install` checks the sizes, converts to 256 colours (dithered, with the
+app's amber and text colours kept exact) and copies the results into
+`sce_sys/`; then rebuild. Needs Pillow. The current art is the globe from
+`render`, drawn from the app's own Natural Earth map.
+
+The gate (`startup.png`) sits over the upper middle of `bg.png` when the
+LiveArea is open, so keep text and detail out of that part of the
+background.
 
 ## Files on the Vita
 

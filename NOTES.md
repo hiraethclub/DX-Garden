@@ -1178,3 +1178,19 @@ the AAC message, 404, HLS, and DNS retries with back-off. Fixes:
   (centred), so the focused place (Istanbul) may sit under the gate; check
   on the Vita. The old bubble may stay cached after an update install
   (delete the app first, or VitaShell's "Refresh LiveArea").
+
+## Build 00.26: no text on the LiveArea background
+
+- **00.25 on hardware:** the bubble is fine, but on the LiveArea the gate
+  (`startup.png`) sat over the background's title and tagline. The tagline
+  ("Radio from your own station list") was out of date anyway now that a
+  list ships with the app.
+- The background is now just the globe, stars and the Istanbul ring; the
+  gate carries the name.
+- The cloud session's renderer is now in the repo as
+  `tools/livearea_globe.py` (needs numpy), used by `make_livearea.py
+  render`, which writes `art/livearea/` and installs. Its palette
+  handling (reserved entries for amber and text) is now in `install` too.
+- The gate's exact position is still not measured. If more needs to move,
+  a photo of the LiveArea against the placeholder grid
+  (`make_livearea.py placeholders`) would pin it down.

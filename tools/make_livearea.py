@@ -7,6 +7,9 @@ The Vita LiveArea needs these, as 8-bit palette PNGs (256 colours at most):
   bg.png        840x500  sce_sys/livearea/contents/bg.png       LiveArea background
   startup.png   280x158  sce_sys/livearea/contents/startup.png  the gate you tap to start
 
+  python3 tools/make_livearea.py render
+      Draws the globe artwork (tools/livearea_globe.py, needs numpy) to
+      art/livearea/ and installs it.
   python3 tools/make_livearea.py placeholders
       Writes labelled templates (with a coordinate grid and guides) to
       art/livearea/ as normal RGB PNGs to draw over, and installs them, so a
@@ -39,6 +42,12 @@ IMAGES = {
 }
 
 INK = (20, 20, 20)
+# App colours (vita/gfx.h, and the globe's sea and land) kept exact in the
+# palette.
+ACCENT = (242, 165, 65)
+TEXT = (232, 234, 237)
+DIM = (140, 149, 163)
+DARKS = ((14, 17, 22), (16, 33, 52), (52, 70, 89))
 
 
 def font(size, bold=True):
@@ -60,8 +69,20 @@ def save_palette(img, path):
     the palette is short, so pad the palette to 256 entries to force 8-bit.
     """
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    q = img.convert("RGB").quantize(colors=256, method=Image.Quantize.MEDIANCUT,
-                                    dither=Image.Dither.FLOYDSTEINBERG)
+    # Median cut spends the palette on the big areas and folds a few amber
+    # pixels into a muddy neighbour, so reserve entries for the app's accent
+    # and text colours, and blends of them into its dark backgrounds.
+    img = img.convert("RGB")
+    reserved = []
+    for c in (ACCENT, TEXT, DIM):
+        for t in (1.0, 0.8, 0.6, 0.4, 0.25):
+            for under in DARKS:
+                reserved += [round(a * t + b * (1 - t)) for a, b in zip(c, under)]
+    free = 256 - len(reserved) // 3
+    auto = img.quantize(colors=free, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
+    pal_img = Image.new("P", (1, 1))
+    pal_img.putpalette(auto.getpalette()[: free * 3] + reserved)
+    q = img.quantize(palette=pal_img, dither=Image.Dither.FLOYDSTEINBERG)
     pal = q.getpalette()[: 256 * 3]
     q.putpalette(pal + [0] * (256 * 3 - len(pal)))
     q.save(path, bits=8)
@@ -132,6 +153,17 @@ def cmd_placeholders():
         save_palette(img, os.path.join(ROOT, dest))
 
 
+def cmd_render():
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import livearea_globe  # needs numpy; only this command does
+    os.makedirs(ART_DIR, exist_ok=True)
+    for name, img in livearea_globe.render().items():
+        path = os.path.join(ART_DIR, name)
+        img.save(path)
+        print("wrote", os.path.relpath(path, ROOT))
+    cmd_install(ART_DIR)
+
+
 def cmd_install(src):
     bad = []
     for name, (w, h, dest, _) in IMAGES.items():
@@ -154,7 +186,9 @@ def cmd_install(src):
 
 
 def main(argv):
-    if len(argv) >= 1 and argv[0] == "placeholders":
+    if len(argv) >= 1 and argv[0] == "render":
+        cmd_render()
+    elif len(argv) >= 1 and argv[0] == "placeholders":
         cmd_placeholders()
     elif len(argv) >= 1 and argv[0] == "install":
         cmd_install(argv[1] if len(argv) > 1 else ART_DIR)
