@@ -1194,3 +1194,26 @@ the AAC message, 404, HLS, and DNS retries with back-off. Fixes:
 - The gate's exact position is still not measured. If more needs to move,
   a photo of the LiveArea against the placeholder grid
   (`make_livearea.py placeholders`) would pin it down.
+
+## Build 00.27: Swansea, and the gate's name moved up
+
+- **00.26 on hardware:** much better, but the "DX Garden" name on the gate
+  sat close to the Start button the Vita draws over the bottom of it. The
+  name and its underline are now 28 px higher (underline at y 94-96 of
+  158).
+- **Focus moved to Swansea** (51.62 N, 3.94 W), where the tester lives, in
+  all three images: under the crosshair on the bubble and gate, and under
+  the rings on the background. The background globe is turned (view
+  centre 26.5 S, 27.25 W, solved numerically) so Swansea lands where
+  Istanbul was, right of the gate on the horizon; the North Atlantic now
+  fills the horizon.
+
+## Build 00.28: Swansea on the left of the gate
+
+- **00.27 on hardware:** it worked, but with Swansea right of the gate,
+  everything left of it on the horizon was Atlantic.
+- The background is mirrored in layout: the globe's centre is at x 370
+  (was 470) and the view (26.5 S, 19.25 E, solved numerically) puts
+  Swansea at about (176, 364), left of the gate. The horizon to its right
+  is now Europe, the Mediterranean, the Black Sea and the Middle East. The
+  rings span about x 85-265, clear of a centred 280 px gate.

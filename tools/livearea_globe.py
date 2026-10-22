@@ -306,7 +306,9 @@ def font(path, size):
 
 # ---------------------------------------------------------------- images
 
-FOCUS = (30.0, 31.2)  # the place under the crosshair on the icon and gate
+# The place under the crosshair and rings in all three images: Swansea,
+# where DX Garden was made.
+FOCUS = (51.62, -3.94)
 
 
 def render():
@@ -333,18 +335,20 @@ def make_bg(land, lines):
     W, H = 840, 500
     c = new_canvas(W, H)
     vertical_gradient(c, BG, SKY_LOW, power=1.6)
-    # A big globe rising from the bottom, seen from orbit: the
-    # Mediterranean along the horizon, Africa below. The gate covers the
-    # middle of the LiveArea, so the focus place (Istanbul) sits to the
-    # right of it.
-    v = View(470 * SS, 1120 * SS, 790 * SS, -38.0, 10.0)
+    # A big globe rising from the bottom, seen from orbit, with the focus
+    # place (Swansea) on the horizon left of the gate, which covers the
+    # middle of the LiveArea. Swansea is on Europe's western edge, so with
+    # it on the left the horizon to its right is Europe, not the Atlantic
+    # (00.27 had it on the right). The view is solved so Swansea lands at
+    # about (176, 364).
+    v = View(370 * SS, 1120 * SS, 790 * SS, -26.5, 19.25)
 
     def under_globe(x, y):
         return (x - v.cx) ** 2 + (y - v.cy) ** 2 < (v.r * 1.08) ** 2
     stars(c, 170, seed=7, max_y=H * SS, avoid=under_globe)
     draw_globe(c, v, land, lines, coast_w=SS, border_w=SS, grid_w=SS, glow=0.11,
                coast_a=0.75, light=0.82)
-    draw_places(c, v, 3.2 * SS, focus=(41.0, 29.0), rings=6, ring_step=15 * SS,
+    draw_places(c, v, 3.2 * SS, focus=FOCUS, rings=6, ring_step=15 * SS,
                 ring_w=2 * SS, sep=14 * SS)
     # No title: the gate sits over the upper middle and covered it (00.25
     # on hardware), and the gate already carries the name.
@@ -364,9 +368,10 @@ def make_startup(land, lines):
     img = to_image(c, W, H)
 
     d = ImageDraw.Draw(img)
-    d.text((136, 50), "DX", font=font(FONT_BOLD, 30), fill=TEXT)
-    d.text((136, 80), "Garden", font=font(FONT_BOLD, 30), fill=TEXT)
-    d.rectangle([138, 122, 138 + 26, 124], fill=ACCENT)
+    # Kept high: the Vita draws its Start button over the bottom of the gate.
+    d.text((136, 22), "DX", font=font(FONT_BOLD, 30), fill=TEXT)
+    d.text((136, 52), "Garden", font=font(FONT_BOLD, 30), fill=TEXT)
+    d.rectangle([138, 94, 138 + 26, 96], fill=ACCENT)
     # A thin frame, as the gate sits on the LiveArea background.
     d.rectangle([0, 0, W - 1, H - 1], outline=(52, 62, 78))
     return img
