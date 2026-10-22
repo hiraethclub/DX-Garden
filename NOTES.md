@@ -1248,7 +1248,8 @@ the AAC message, 404, HLS, and DNS retries with back-off. Fixes:
   1844dbe86c0b5d695b61cb8ee53799af4a7b7b2a0105131941f86d1c4a955c21.
 - Merged to `main` through pull request #1 with a merge commit (so 173fb6e,
   shown in About, stays in history), tagged `v0.9.0`, and published as a
-  GitHub pre-release with the VPK attached:
+  regular GitHub release marked Latest (a pre-release doesn't show on the
+  repository's main page), titled "(beta)", with the VPK attached:
   https://github.com/hiraethclub/DX-Garden/releases/tag/v0.9.0
 - Next build numbers continue from 31. `VERSION` stays 0.9.0 until the next
   release is decided (0.9.1 for fixes, 1.0.0 when the beta is done).
