@@ -3,3 +3,6 @@ build-test/
 logs/
 __pycache__/
 build-release/
+third_party/
+build-*/
+dist/

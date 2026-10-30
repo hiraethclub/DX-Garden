@@ -10,6 +10,9 @@ project(dxgarden C)
 #   BUILD    goes up by one for every build handed over for testing.
 file(STRINGS "${CMAKE_SOURCE_DIR}/VERSION" DXG_VERSION LIMIT_COUNT 1)
 file(STRINGS "${CMAKE_SOURCE_DIR}/BUILD" DXG_BUILD LIMIT_COUNT 1)
+# Re-run CMake when either changes, so a bumped BUILD reaches the binary.
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+             "${CMAKE_SOURCE_DIR}/VERSION" "${CMAKE_SOURCE_DIR}/BUILD")
 if(NOT DXG_VERSION MATCHES "^([0-9]|[1-9][0-9])\\.([0-9])\\.([0-9])$")
     message(FATAL_ERROR "VERSION must be MAJOR.MINOR.PATCH with minor and patch 0-9, "
                         "e.g. 1.0.0 (the Vita's version field is XX.YY): '${DXG_VERSION}'")
@@ -146,6 +149,17 @@ if(VITA)
         FILE assets/map/lines.bin map/lines.bin
     )
 else()
+    # The desktop app: Windows (cross-built with cmake/mingw-w64.cmake), or
+    # Linux for development. Libraries from tools/build_win_deps.sh.
+    if(WIN32)
+        option(DXG_DESKTOP "Build the desktop app" ON)
+    else()
+        option(DXG_DESKTOP "Build the desktop app (Linux development build)" OFF)
+    endif()
+    if(DXG_DESKTOP)
+        include(cmake/desktop.cmake)
+    endif()
+
     add_executable(dxgarden_test
         ${CORE_SOURCES}
         tests/test_main.c
@@ -159,9 +173,12 @@ else()
     target_include_directories(dxgarden_test PRIVATE core)
     target_compile_definitions(dxgarden_test PRIVATE
                                DXG_TESTDATA_DIR="${CMAKE_SOURCE_DIR}/testdata")
-    target_compile_options(dxgarden_test PRIVATE -Wall -Wextra -Wpedantic -g
-                           -fsanitize=address,undefined)
-    target_link_options(dxgarden_test PRIVATE -fsanitize=address,undefined)
+    target_compile_options(dxgarden_test PRIVATE -Wall -Wextra -Wpedantic -g)
+    # MinGW has no sanitizers; the Windows build of the tests runs under Wine.
+    if(NOT WIN32)
+        target_compile_options(dxgarden_test PRIVATE -fsanitize=address,undefined)
+        target_link_options(dxgarden_test PRIVATE -fsanitize=address,undefined)
+    endif()
     target_link_libraries(dxgarden_test m)
 
     enable_testing()

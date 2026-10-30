@@ -8,6 +8,16 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifdef _WIN32
+#include <direct.h>
+#include <io.h>
+/* MinGW has no mkdtemp; this is enough for one temp dir per run. */
+static char *mkdtemp(char *tmpl)
+{
+    return _mktemp(tmpl) && _mkdir(tmpl) == 0 ? tmpl : NULL;
+}
+#endif
+
 #include "config.h"
 #include "library.h"
 #include "search.h"
@@ -454,7 +464,7 @@ static void test_config(void)
 
 /* ---- sources against real files --------------------------------------- */
 
-static char tmpdir[64];
+static char tmpdir[200];
 
 static void write_file(const char *name, const char *content, size_t len)
 {
@@ -489,7 +499,14 @@ static void test_sources(void)
     load_report r;
     static const char latin1[] = "Caf\xE9 FM | http://cafe.example/ | France | Paris | 48.85 | 2.35\n";
 
+#ifdef _WIN32
+    {
+        const char *t = getenv("TEMP");
+        snprintf(tmpdir, sizeof(tmpdir), "%s\\dxg_test_XXXXXX", t ? t : ".");
+    }
+#else
     strcpy(tmpdir, "/tmp/dxg_test_XXXXXX");
+#endif
     if (!mkdtemp(tmpdir)) {
         CHECK(!"mkdtemp failed");
         return;

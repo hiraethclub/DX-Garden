@@ -1253,3 +1253,81 @@ the AAC message, 404, HLS, and DNS retries with back-off. Fixes:
   https://github.com/hiraethclub/DX-Garden/releases/tag/v0.9.0
 - Next build numbers continue from 31. `VERSION` stays 0.9.0 until the next
   release is decided (0.9.1 for fixes, 1.0.0 when the beta is done).
+
+## Windows port, W1: foundation and one stream (build 31, 2026-10-30)
+
+Branch `windows-port`. The desktop app lives in `desktop/` beside `vita/`,
+sharing `core/` unchanged. It is a Windows 11 app, but the same code builds
+on Linux, which is the development build: it can be run and screenshotted
+here before a Windows build goes out.
+
+**Toolchain.** Windows builds are cross-compiled on Linux with MinGW-w64
+(the `-posix` compilers), via `cmake/mingw-w64.cmake`. The MinGW runtime is
+linked statically, so `dxgarden.exe` imports only DLLs that come with
+Windows. Wine runs the Windows builds here for checks.
+
+**Libraries** (`tools/build_win_deps.sh`, official source releases, SHA-256
+pinned on first download, static, into `third_party/`, which git ignores):
+
+| Library | Version | Notes |
+|---|---|---|
+| SDL3 | 3.4.18 | Window, input, threads, audio (WASAPI on Windows). Built for Linux too, so both builds use the same SDL. |
+| libcurl | 8.23.0 | Schannel TLS: Windows' own certificate store, so no `cacert.pem` to ship or refresh. Revocation checks are off (`CURLSSLOPT_NO_REVOKE`), as they fail behind some proxies. |
+| mpg123 | 1.33.7 | |
+| FreeType, HarfBuzz, FriBidi | 2.15.0, 15.0.0, 1.0.18 | Built now, used from W2. |
+
+On Linux the development build takes curl and mpg123 from the distribution.
+
+**What changed from the Vita player** (`desktop/player.c`, a port of
+`vita/player.c`): Sony threads, mutexes and condition variables became SDL
+ones; the decode thread feeds an SDL audio stream on the default device
+instead of a SceAudio BGM port. SDL resamples, so a stream changing rate
+only changes the input format. The decoder keeps at most 250 ms queued at
+the device, so the stream buffer (not the device queue) holds the slack, as
+on the Vita. The network side, playlist following, ICY titles, error
+messages and reconnects are unchanged.
+
+**Data folder:** `%APPDATA%\DX Garden\` (Linux: `~/.local/share/DX Garden/`).
+W1 writes only the log there, `log-<version>-b<build>.txt` and
+`...-previous.txt`, as on the Vita.
+
+**Checked here** (Linux build, and the Windows build under Wine 10):
+
+- `core/` tests: 4,538 checks, 0 failures, on both.
+- MP3 over HTTPS (Radio Camarthenshire), a PLS playlist and plain HTTP
+  (SomaFM Groove Salad): connect in 1-2 s, titles shown, decoding under 1%
+  of real time.
+- An AAC stream gets the Vita's message, "This station streams AAC; DX
+  Garden only plays MP3" (AAC arrives in W5).
+
+**Headless check:** `dxgarden --play URL --seconds N` plays without a
+window, prints the status each second and exits 0 if it played.
+
+**Known issues**
+
+- `core/search.c:93` gives a `-Walloc-size-larger-than` warning with MinGW
+  GCC 14 at -O2. It is a false positive (`n` can't be negative there), and
+  `core/` is shared with the Vita, so it is left alone for now.
+- The .exe isn't code-signed, so Windows SmartScreen warns the first time
+  it is run ("More info", then "Run anyway"). Signing is for W8.
+
+## Decisions for the Windows globe (2026-10-30, for W4 and W5)
+
+Made by Aisling, before any of it is built:
+
+- **Imagery:** NASA Blue Marble (day) and Black Marble (night lights), both
+  public domain, ship with the app, so the globe works fully offline.
+  Optional online layers, off by default and cached on disk: Sentinel-2
+  cloudless (EOX, 10 m per pixel; licence terms to be checked before use)
+  and NASA GIBS daily imagery (today's clouds). These are the only live
+  lookups for imagery. Google, Bing and Esri imagery are ruled out by their
+  terms.
+- **Satellites:** orbit data (TLEs) for a short list (ISS, Tiangong,
+  Hubble) is fetched from CelesTrak at most once a day and cached. Stale
+  data is labelled with its age; with none, satellites are hidden.
+- **Download size:** about 300 MB with the imagery at 1 km per pixel, plus
+  an optional 500 m detail pack that unpacks into the data folder.
+- Sun, Moon, planets, stars and the grey line are computed offline.
+
+**Test builds:** each one goes to GitHub as a pre-release (tag
+`win-b<build>`) with the zip attached, for testing on a Windows PC.
