@@ -47,6 +47,15 @@ static unsigned glyphs_used, atlas_resets;
 
 static atlas_region white, checker;
 
+static void quad(float x0, float y0, float x1, float y1, float u0, float v0, float u1, float v1,
+                 unsigned col);
+
+static struct {
+    int on, x, y, w, h;
+    draw_underlay_fn fn;
+    void *ud;
+} under;
+
 static const char *VS =
     "#version 330 core\n"
     "layout(location = 0) in vec2 pos;\n"
@@ -323,21 +332,86 @@ void draw_begin(int pw, int ph, float scale)
     n_clips = 0;
     n_quads = 0;
     stat_calls = stat_quads = 0;
+    under.on = 0;
+}
+
+void draw_underlay(int x, int y, int w, int h, draw_underlay_fn fn, void *ud)
+{
+    const float k = 1.0f / ATLAS;
+    float u = (white.x + 2) * k, v = (white.y + 2) * k;
+    under.on = 1;
+    under.x = x;
+    under.y = y;
+    under.w = w;
+    under.h = h;
+    under.fn = fn;
+    under.ud = ud;
+    /* Transparent black, written without blending. */
+    flush();
+    glDisable(GL_BLEND);
+    quad((float)x, (float)y, (float)(x + w), (float)(y + h), u, v, u, v, 0);
+    flush();
+    glEnable(GL_BLEND);
+}
+
+/* The interface over whatever is on the screen, from texture `tex` whose
+ * used part is tw x th of a tw_alloc x th_alloc texture, scaled to dw x dh
+ * at the top left. The texture holds premultiplied colour. */
+static void composite(GLuint tex, int tw, int th, int tw_alloc, int th_alloc, int dw, int dh)
+{
+    float u1 = (float)tw / tw_alloc, v1 = (float)th / th_alloc;
+    vertex v[6];
+    v[0] = (vertex){ 0, 0, 0, v1, 0xFFFFFFFFu };
+    v[1] = (vertex){ (float)dw, 0, u1, v1, 0xFFFFFFFFu };
+    v[2] = (vertex){ (float)dw, (float)dh, u1, 0, 0xFFFFFFFFu };
+    v[3] = v[0];
+    v[4] = v[2];
+    v[5] = (vertex){ 0, (float)dh, 0, 0, 0xFFFFFFFFu };
+    glViewport(0, px_h - dh, dw, dh);
+    glUseProgram(prog);
+    glUniform2f(u_size, (float)dw, (float)dh);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(v), v);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindTexture(GL_TEXTURE_2D, atlas_tex);
 }
 
 void draw_end(void)
 {
     flush();
     glDisable(GL_SCISSOR_TEST);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, px_w, px_h);
-    /* Top-left aligned: GL's origin is bottom-left, so the logical frame's
-     * top row lands on the window's top row. */
+    glClearColor(0, 0, 0, 1);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    if (under.on && under.fn) {
+        /* The underlay's rectangle in real pixels, GL's origin bottom-left. */
+        int x0 = (int)(under.x * cur_scale + 0.5f), y0 = (int)(under.y * cur_scale + 0.5f);
+        int x1 = (int)((under.x + under.w) * cur_scale + 0.5f);
+        int y1 = (int)((under.y + under.h) * cur_scale + 0.5f);
+        if (x1 > x0 && y1 > y0) {
+            glViewport(x0, px_h - y1, x1 - x0, y1 - y0);
+            glEnable(GL_SCISSOR_TEST);
+            glScissor(x0, px_h - y1, x1 - x0, y1 - y0);
+            under.fn(x1 - x0, y1 - y0, under.ud);
+            glDisable(GL_SCISSOR_TEST);
+            /* The underlay may change any state; put back what we use. */
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glDisable(GL_CULL_FACE);
+            glDisable(GL_DEPTH_TEST);
+            glActiveTexture(GL_TEXTURE0);
+        }
+    }
+
     if (whole(cur_scale)) {
         int k = (int)(cur_scale + 0.5f);
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-        glBlitFramebuffer(0, 0, lw, lh, 0, px_h - lh * k, lw * k, px_h, GL_COLOR_BUFFER_BIT,
-                          GL_NEAREST);
+        glBindTexture(GL_TEXTURE_2D, fbo_tex);
+        composite(fbo_tex, lw, lh, fbo_w, fbo_h, lw * k, lh * k);
     } else {
         int k = (int)cur_scale + 1, bw = lw * k, bh = lh * k;
         int dw = (int)(lw * cur_scale + 0.5f), dh = (int)(lh * cur_scale + 0.5f);
@@ -351,16 +425,16 @@ void draw_end(void)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glBindFramebuffer(GL_FRAMEBUFFER, big_fbo);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, big_tex, 0);
-            glBindTexture(GL_TEXTURE_2D, atlas_tex);
         }
+        /* Enlarge without filtering, then shrink with it (sharp bilinear). */
         glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, big_fbo);
         glBlitFramebuffer(0, 0, lw, lh, 0, 0, bw, bh, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, big_fbo);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-        glBlitFramebuffer(0, 0, bw, bh, 0, px_h - dh, dw, px_h, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        composite(big_tex, bw, bh, big_w, big_h, dw, dh);
     }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    glViewport(0, 0, px_w, px_h);
     frame_calls = stat_calls + 1;
     frame_quads = stat_quads;
 }

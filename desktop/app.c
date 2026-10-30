@@ -18,6 +18,7 @@
 #include "fs.h"
 #include "gallery.h"
 #include "gl.h"
+#include "globe_view.h"
 #include "library_view.h"
 #include "log.h"
 #include "player.h"
@@ -33,6 +34,7 @@ enum {
     CMD_ADD, CMD_RELOAD, CMD_OPEN_FOLDER, CMD_REPORT,
     CMD_TOOLBAR, CMD_STATUSBAR, CMD_SMOOTH, CMD_SCALE_AUTO, CMD_ZOOM_IN, CMD_ZOOM_OUT,
     CMD_CASCADE, CMD_TILE, CMD_SHOW_STATIONS, CMD_SHOW_PLAYER, CMD_GALLERY, CMD_ABOUT,
+    CMD_SHOW_GLOBE, CMD_AUTO_TUNE,
     CMD_SCALE_FIRST /* CMD_SCALE_FIRST + i is SCALES[i]; keep last */
 };
 
@@ -63,7 +65,7 @@ static struct {
     int recent_dirty;
     uint64_t recent_due;
 
-    ui_window *w_stations, *w_player, *w_gallery, *w_about;
+    ui_window *w_stations, *w_player, *w_gallery, *w_about, *w_globe;
 
     SDL_Cursor *cursors[SDL_SYSTEM_CURSOR_COUNT];
     SDL_SystemCursor cursor_now;
@@ -157,6 +159,15 @@ static void play_address(void)
         start_url(u, "Not in your station list", u, -1);
 }
 
+/* From the Stations window or a menu: the globe turns to the place too.
+ * (Tuning from the globe itself doesn't move it.) */
+static void play_from_list(int si)
+{
+    play_station(si);
+    if (si >= 0 && si < A.d.lib.stations.count && A.d.lib.stations.items[si].place >= 0)
+        globeview_focus_place(A.d.lib.stations.items[si].place);
+}
+
 static int playing_station(void)
 {
     return A.playing_si;
@@ -170,6 +181,7 @@ static void reload_library(void)
     /* Station indices changed: find the playing one again. */
     A.playing_si = url[0] ? library_find_url(&A.d.lib, url) : -1;
     libview_library_changed();
+    globeview_library_changed();
     {
         char msg[200];
         snprintf(msg, sizeof(msg), "Reloaded: %d stations, %d problem%s", A.d.lib.stations.count,
@@ -284,7 +296,8 @@ static void about_window(ui_window *w, rect c, void *ud)
                  "the style of Windows 9x; no Microsoft artwork, fonts or sounds are used. "
                  "Text in Liberation Sans and Noto (SIL Open Font License). The bundled "
                  "station list comes from Radio Browser, with town names from GeoNames "
-                 "(CC BY 4.0).");
+                 "(CC BY 4.0). Globe imagery: NASA Blue Marble: Next Generation (Reto "
+                 "Stöckli, NASA Earth Observatory).");
     draw_rect(c.x + 10, c.y + c.h - 44, c.w - 20, 1, UI_SHADOW);
     draw_rect(c.x + 10, c.y + c.h - 43, c.w - 20, 1, UI_HILIGHT);
     if (ui_button_ex(ui_id("OK"), "OK", c.x + c.w - 85, c.y + c.h - 33, 75, UI_BUTTON_H, 1, 0) ||
@@ -334,14 +347,17 @@ static ui_menu_item view_items[] = {
     { "Interface &Size", NULL, 0, 0, &size_menu },
     { "S&mooth Screen Fonts", NULL, CMD_SMOOTH, 0, NULL },
     { NULL, NULL, 0, MI_SEPARATOR, NULL },
+    { "&Play Place Under Crosshair", NULL, CMD_AUTO_TUNE, 0, NULL },
+    { NULL, NULL, 0, MI_SEPARATOR, NULL },
     { "&Load Report...", NULL, CMD_REPORT, 0, NULL },
 };
 static ui_menu_item window_items[] = {
     { "&Cascade", NULL, CMD_CASCADE, 0, NULL },
     { "&Tile", NULL, CMD_TILE, 0, NULL },
     { NULL, NULL, 0, MI_SEPARATOR, NULL },
-    { "&1 Stations", NULL, CMD_SHOW_STATIONS, 0, NULL },
-    { "&2 Now Playing", NULL, CMD_SHOW_PLAYER, 0, NULL },
+    { "&1 Globe", NULL, CMD_SHOW_GLOBE, 0, NULL },
+    { "&2 Stations", NULL, CMD_SHOW_STATIONS, 0, NULL },
+    { "&3 Now Playing", NULL, CMD_SHOW_PLAYER, 0, NULL },
 };
 static ui_menu_item help_items[] = {
     { "&Control Gallery", NULL, CMD_GALLERY, 0, NULL },
@@ -349,7 +365,7 @@ static ui_menu_item help_items[] = {
     { "&About DX Garden", NULL, CMD_ABOUT, 0, NULL },
 };
 static ui_menu menus[] = {
-    { file_items, 5 }, { station_items, 9 }, { view_items, 7 }, { window_items, 5 },
+    { file_items, 5 }, { station_items, 9 }, { view_items, 9 }, { window_items, 6 },
     { help_items, 3 },
 };
 static const char *menu_labels[] = { "&File", "&Station", "&View", "&Window", "&Help" };
@@ -375,8 +391,10 @@ static void update_menu_checks(void)
     for (i = 0; i < N_SCALES; i++)
         if (SCALES[i] == A.scale_setting)
             size_items[2 + i].flags |= MI_CHECKED;
-    window_items[3].flags = A.w_stations->open ? MI_CHECKED : 0;
-    window_items[4].flags = A.w_player->open ? MI_CHECKED : 0;
+    view_items[6].flags = globeview_auto_tune() ? MI_CHECKED : 0;
+    window_items[3].flags = A.w_globe->open ? MI_CHECKED : 0;
+    window_items[4].flags = A.w_stations->open ? MI_CHECKED : 0;
+    window_items[5].flags = A.w_player->open ? MI_CHECKED : 0;
 }
 
 static void show_dialog(ui_window *w)
@@ -392,7 +410,7 @@ static void command(int cmd)
     case CMD_PLAY: {
         int si = libview_current();
         if (si >= 0)
-            play_station(si);
+            play_from_list(si);
         else
             play_address();
         break;
@@ -444,6 +462,8 @@ static void command(int cmd)
     case CMD_SHOW_STATIONS: ui_window_show(A.w_stations); break;
     case CMD_SHOW_PLAYER: ui_window_show(A.w_player); break;
     case CMD_GALLERY: ui_window_show(A.w_gallery); break;
+    case CMD_SHOW_GLOBE: ui_window_show(A.w_globe); break;
+    case CMD_AUTO_TUNE: globeview_set_auto_tune(!globeview_auto_tune()); break;
     case CMD_ABOUT: show_dialog(A.w_about); break;
     default:
         if (cmd >= CMD_SCALE_FIRST && cmd < CMD_SCALE_FIRST + N_SCALES)
@@ -499,7 +519,7 @@ static SDL_HitTestResult SDLCALL hit_test(SDL_Window *win, const SDL_Point *pt, 
 int app_init(SDL_Window *win, const char *assets, const char *data)
 {
     char fonts[1024];
-    libview_hooks hooks = { play_station, playing_station, status };
+    libview_hooks hooks = { play_from_list, playing_station, status };
 
     memset(&A, 0, sizeof(A));
     A.win = win;
@@ -537,11 +557,22 @@ int app_init(SDL_Window *win, const char *assets, const char *data)
                                 UIW_RESIZABLE, gallery_window, NULL);
     A.w_gallery->min_w = 450;
     A.w_gallery->min_h = 300;
-    A.w_about = ui_window_new("About DX Garden", ICON_APP16, 0, 0, 380, 220,
+    A.w_about = ui_window_new("About DX Garden", ICON_APP16, 0, 0, 400, 250,
                               UIW_DIALOG | UIW_MODAL, about_window, NULL);
+    A.w_globe = ui_window_new("Globe", ICON_GLOBE, 8, 8, 640, 480, UIW_RESIZABLE, globeview_draw,
+                              NULL);
+    A.w_globe->min_w = 320;
+    A.w_globe->min_h = 240;
     libview_init(&A.d, &hooks);
-    ui_window_show(A.w_player);
+    {
+        char pack[1100];
+        globeview_hooks gh = { play_station, playing_station };
+        snprintf(pack, sizeof(pack), "%searth-day.pack", assets);
+        globeview_init(&A.d, &gh, pack);
+    }
     ui_window_show(A.w_stations);
+    ui_window_show(A.w_player);
+    ui_window_show(A.w_globe);
 
     SDL_SetWindowHitTest(win, hit_test, NULL);
     if (A.d.report.errors) {
@@ -631,11 +662,14 @@ static void toolbar(int x, int y, int w)
     if (ui_tool_button(0x7004, ICON_FIND, bx, y + 4, 0, "Find (Ctrl+F)"))
         command(CMD_FIND);
     bx += 23;
-    if (ui_tool_button(0x7005, ICON_GLOBE, bx, y + 4, 0, "Random Place (Ctrl+R)"))
+    if (ui_tool_button(0x7005, ICON_TOWN, bx, y + 4, 0, "Random Place (Ctrl+R)"))
         command(CMD_RANDOM);
     bx += 27;
     separator(bx - 3, y);
     bx += 4;
+    if (ui_tool_button(0x7008, ICON_GLOBE, bx, y + 4, A.w_globe->open, "Globe"))
+        command(CMD_SHOW_GLOBE);
+    bx += 23;
     if (ui_tool_button(0x7006, ICON_LIST, bx, y + 4, A.w_stations->open, "Stations"))
         command(CMD_SHOW_STATIONS);
     bx += 23;
@@ -715,13 +749,17 @@ int app_frame(void)
         if (!A.placed) {
             /* First frame: the workspace is known now. Fit the windows to
              * it: Stations on the left, Now Playing on the right. */
-            int pwid = 300, swid = ws.w - pwid - 24;
-            if (swid < 420)
-                swid = 420;
-            A.w_stations->r = (rect){ ws.x + 8, ws.y + 8, swid, ws.h - 16 };
-            A.w_player->r = (rect){ ws.x + 16 + swid, ws.y + 8, pwid, 260 };
-            if (A.w_player->r.x + pwid > ws.x + ws.w)
-                A.w_player->r.x = ws.x + ws.w - pwid - 8;
+            /* The globe on the left; Now Playing and Stations on the
+             * right. */
+            int right_w = ws.w * 2 / 5, gw = ws.w - right_w - 6, ph = 250;
+            if (right_w < 300)
+                right_w = 300;
+            if (gw < 320)
+                gw = 320;
+            A.w_globe->r = (rect){ ws.x, ws.y, gw, ws.h };
+            A.w_player->r = (rect){ ws.x + ws.w - right_w, ws.y, right_w, ph };
+            A.w_stations->r = (rect){ ws.x + ws.w - right_w, ws.y + ph + 4, right_w,
+                                      ws.h - ph - 4 };
             A.placed = 1;
         }
         ui_windows();
@@ -770,6 +808,7 @@ void app_shutdown(void)
     int i;
     if (A.recent_dirty)
         data_save_recent(&A.d);
+    globeview_shutdown();
     save_settings();
     for (i = 0; i < SDL_SYSTEM_CURSOR_COUNT; i++)
         if (A.cursors[i])

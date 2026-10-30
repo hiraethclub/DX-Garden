@@ -64,7 +64,18 @@
     X(glFramebufferTexture2D, void, (GLenum, GLenum, GLenum, GLuint, GLint))                   \
     X(glCheckFramebufferStatus, GLenum, (GLenum))                                              \
     X(glBlitFramebuffer, void,                                                                 \
-      (GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLbitfield, GLenum))
+      (GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLbitfield, GLenum))           \
+    X(glUniform1f, void, (GLint, GLfloat))                                                     \
+    X(glUniform3f, void, (GLint, GLfloat, GLfloat, GLfloat))                                   \
+    X(glUniform4f, void, (GLint, GLfloat, GLfloat, GLfloat, GLfloat))                          \
+    X(glUniformMatrix4fv, void, (GLint, GLsizei, GLboolean, const GLfloat *))                  \
+    X(glCullFace, void, (GLenum))                                                              \
+    X(glFrontFace, void, (GLenum))                                                             \
+    X(glGenerateMipmap, void, (GLenum))                                                        \
+    X(glTexParameterf, void, (GLenum, GLenum, GLfloat))                                        \
+    X(glReadPixels, void, (GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, void *))            \
+    X(glDepthMask, void, (GLboolean))                                                          \
+    X(glDrawElements, void, (GLenum, GLsizei, GLenum, const void *))
 
 #define DXG_GL_DECLARE(name, ret, args) extern ret(APIENTRY *dxg_##name) args;
 DXG_GL_FUNCS(DXG_GL_DECLARE)
@@ -123,6 +134,17 @@ DXG_GL_FUNCS(DXG_GL_DECLARE)
 #define glFramebufferTexture2D dxg_glFramebufferTexture2D
 #define glCheckFramebufferStatus dxg_glCheckFramebufferStatus
 #define glBlitFramebuffer dxg_glBlitFramebuffer
+#define glUniform1f dxg_glUniform1f
+#define glUniform3f dxg_glUniform3f
+#define glUniform4f dxg_glUniform4f
+#define glUniformMatrix4fv dxg_glUniformMatrix4fv
+#define glCullFace dxg_glCullFace
+#define glFrontFace dxg_glFrontFace
+#define glGenerateMipmap dxg_glGenerateMipmap
+#define glTexParameterf dxg_glTexParameterf
+#define glReadPixels dxg_glReadPixels
+#define glDepthMask dxg_glDepthMask
+#define glDrawElements dxg_glDrawElements
 #endif
 
 /* Loads every function above from the current context. Returns 0, or -1

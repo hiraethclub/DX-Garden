@@ -6,3 +6,4 @@ build-release/
 third_party/
 build-*/
 dist/
+assets-build/

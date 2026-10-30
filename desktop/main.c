@@ -12,6 +12,7 @@
  *                                 move X Y, click X Y, dclick X Y, rclick X Y,
  *                                 down X Y, up X Y, key NAME (an SDL key name,
  *                                 "alt+f" style modifiers), type TEXT,
+ *                                 wheel X Y CLICKS,
  *                                 wait N, shot FILE,
  *                                 quit. Coordinates are window points.
  */
@@ -262,6 +263,16 @@ static int script_step(SDL_Window *win, char **cursor, int *wait)
             SDL_zero(e);
             e.type = SDL_EVENT_TEXT_INPUT;
             e.text.text = text;
+            SDL_PushEvent(&e);
+        } else if (sscanf(step, " wheel %f %f %199s", &x, &y, arg) == 3) {
+            SDL_Event e;
+            push_mouse(SDL_EVENT_MOUSE_MOTION, x, y, 0, 0);
+            SDL_zero(e);
+            e.type = SDL_EVENT_MOUSE_WHEEL;
+            e.wheel.integer_y = atoi(arg);
+            e.wheel.y = (float)e.wheel.integer_y;
+            e.wheel.mouse_x = x;
+            e.wheel.mouse_y = y;
             SDL_PushEvent(&e);
         } else if (sscanf(step, " wait %f", &x) == 1) {
             *wait = (int)x;

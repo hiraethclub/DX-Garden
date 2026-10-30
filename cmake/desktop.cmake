@@ -40,10 +40,12 @@ add_executable(dxgarden_desktop WIN32
     desktop/app.c
     desktop/data.c
     desktop/draw.c
+    desktop/earth.c
     desktop/font.c
     desktop/fs.c
     desktop/gallery.c
     desktop/gl.c
+    desktop/globe_view.c
     desktop/icons.c
     desktop/library_view.c
     desktop/log.c
@@ -84,3 +86,13 @@ add_custom_command(TARGET dxgarden_desktop POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${CMAKE_SOURCE_DIR}/assets/stations/stations.txt"
             "$<TARGET_FILE_DIR:dxgarden_desktop>/stations.txt")
+# The globe's imagery, built by tools/make_earth.py (not in git: 70 MB).
+if(EXISTS "${CMAKE_SOURCE_DIR}/assets-build/earth-day.pack")
+    add_custom_command(TARGET dxgarden_desktop POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_SOURCE_DIR}/assets-build/earth-day.pack"
+                "$<TARGET_FILE_DIR:dxgarden_desktop>/earth-day.pack")
+else()
+    message(WARNING "assets-build/earth-day.pack is missing: run tools/make_earth.py "
+                    "for the globe's imagery")
+endif()

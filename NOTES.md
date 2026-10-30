@@ -1462,3 +1462,64 @@ was checked), Random Place and Add Station.
 - Dialog labels have no access keys yet (Alt+letter to jump to a field).
 - Favourites can't be reordered in the app yet (the file can be edited).
 - Sleep timer and dark screen (Vita M5) are planned for W7.
+
+## Windows port, W4: the globe (build 35, 2026-10-30)
+
+**Imagery.** NASA Blue Marble: Next Generation, July 2004, with topography
+and bathymetry (Reto Stöckli, NASA Earth Observatory; public domain).
+`tools/make_earth.py` downloads the eight 500 m pieces (433 MB, SHA-256
+pinned, cached in `third_party/earth/`) and cuts a pyramid of 512 px JPEG
+tiles in plate carrée layout, levels 0-5: the whole Earth on two tiles up
+to 32768 x 16384 px, about 1.2 km per pixel at the equator. The tiles go
+in one file, `earth-day.pack` (2,730 tiles, 71 MB), with an index at the
+end, so Windows doesn't have to unzip and scan thousands of small files.
+The pack isn't in git; CMake copies it next to the program when it exists.
+That's well under the 300 MB planned, so a 500 m "detail pack" (level 6)
+can come later without making the download large.
+
+**Renderer** (`desktop/earth.c`): a perspective camera straight above a
+point, at an altitude from 8 km to 60,000 km. Each frame a quadtree picks
+the tiles that are on screen (inside the horizon and the view's corners)
+and whose texels would be at most ~1.2 px; each is drawn as a curved grid
+(32 segments for big tiles, 16 for small) whose vertices are placed on the
+sphere in the vertex shader, camera-relative so floats stay precise near
+the ground. Two loader threads read and decode tiles (stb_image, public
+domain, vendored as `desktop/stb_image.h` at nothings/stb 003501f) and up
+to 8 are uploaded per frame, with mipmaps and anisotropic filtering; 384
+are kept on the GPU, least recently drawn first out, level 0 always kept.
+A tile still loading is drawn from its nearest loaded ancestor, so the
+view sharpens rather than having holes. The atmosphere is a glow from each
+pixel's closest approach to the Earth, plus haze towards the edge of the
+disc. Place dots are smooth (drawn at full resolution with a distance
+function), slightly bigger for busier places.
+
+**How it fits the interface.** The globe draws at the window's full
+resolution, not the interface's logical pixels, so it stays sharp at 150%
+or 200%: the interface punches a transparent hole for it (`draw_underlay`)
+and is composited over it with premultiplied alpha. Windows, menus, the
+crosshair and the text over the globe sit on top as normal.
+
+**Globe window** (`desktop/globe_view.c`): drag to turn (the point under
+the mouse stays under it), with coasting; wheel or Page Up/Down to zoom;
+double-click to fly to a point; arrow keys pan; Home shows the whole
+Earth. The Vita's crosshair rule is kept, using core's dwell timer: a place
+under the crosshair for 0.8 s starts playing (an amber ring shows the
+wait), Enter plays it at once, and clicking a dot turns to it and plays
+it. View, Play Place Under Crosshair turns the automatic part off. The
+panel underneath shows the place and its country, "station n of N" with
+arrows to step through them, and zoom buttons. Playing a station from the
+Stations window or Random Place flies the globe there. The camera is saved
+in `config.ini` ([globe]).
+
+**Checked here** (Linux build, and the Windows build under Wine): zoomed
+from the whole Earth (with the atmosphere) down to 750 km over Wales;
+clicking Manchester's dot flew there and played Bolton FM; dragging and
+coasting; Random Place flying to Chiang Mai.
+
+**Known issues**
+
+- No day/night, grey line, stars, Moon or satellites yet: that's W5.
+- The 1.2 km imagery gets soft below about 100 km altitude; the 500 m
+  detail pack and the optional online layers will help there.
+- Software rendering here is slow, so real frame rates are unknown until
+  tested on Windows with a real GPU.

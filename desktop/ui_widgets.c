@@ -177,7 +177,8 @@ int ui_tool_button(unsigned id, icon_id ic, int x, int y, int pushed_state, cons
     } else if (over) {
         ui_bevel(x, y, w, h, BEVEL_THIN_UP);
     }
-    ui_icon(ic, x + (w - r->w) / 2 + (down || pushed_state), y + (h - r->h) / 2 + (down || pushed_state), 0);
+    ui_icon(ic, x + (w - r->w) / 2 + (down || pushed_state), y + (h - r->h) / 2 + (down || pushed_state),
+            UI_TEXT);
     return clicked;
 }
 

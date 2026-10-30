@@ -66,6 +66,15 @@ int draw_text_width(int slot, int bold, const char *s);
 /* Cut with "..." to fit max_w. Returns the width drawn. */
 int draw_text_fit(int x, int y, int max_w, int slot, int bold, unsigned col, const char *s);
 
+/* Something drawn at the window's full resolution underneath the
+ * interface (the globe). The logical rectangle is punched out of the
+ * interface (made transparent) where the current clip allows; things drawn
+ * over it afterwards (a crosshair, another window) stay on top. At the end
+ * of the frame `fn` is called with the GL viewport already set to the
+ * rectangle in real pixels; one underlay per frame. */
+typedef void (*draw_underlay_fn)(int px_w, int px_h, void *ud);
+void draw_underlay(int x, int y, int w, int h, draw_underlay_fn fn, void *ud);
+
 /* Frame counters for the log: draw calls and quads in the last frame. */
 void draw_last_frame(unsigned *calls, unsigned *quads);
 
