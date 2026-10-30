@@ -26,10 +26,12 @@ typedef struct {
 
 #define GLYPH_SLOTS 8192
 
-static GLuint prog, vao, vbo, atlas_tex, fbo, fbo_tex;
+static GLuint prog, vao, vbo, atlas_tex, fbo, fbo_tex, big_fbo, big_tex;
 static GLint u_size, u_tex;
 static int fbo_w, fbo_h;           /* allocated size of the offscreen buffer */
-static int lw, lh, px_w, px_h, cur_scale;
+static int big_w, big_h;           /* and of the whole-number enlargement */
+static int lw, lh, px_w, px_h;
+static float cur_scale;
 static vertex *verts;
 static int n_quads;
 static unsigned stat_calls, stat_quads, frame_calls, frame_quads;
@@ -188,6 +190,8 @@ int draw_init(void)
 
     glGenFramebuffers(1, &fbo);
     glGenTextures(1, &fbo_tex);
+    glGenFramebuffers(1, &big_fbo);
+    glGenTextures(1, &big_tex);
 
     /* A white block for solid fills, and the checkerboard (opaque on
      * even pixels). */
@@ -210,6 +214,8 @@ void draw_shutdown(void)
     glDeleteTextures(1, &atlas_tex);
     glDeleteTextures(1, &fbo_tex);
     glDeleteFramebuffers(1, &fbo);
+    glDeleteTextures(1, &big_tex);
+    glDeleteFramebuffers(1, &big_fbo);
     glDeleteBuffers(1, &vbo);
     glDeleteVertexArrays(1, &vao);
     glDeleteProgram(prog);
@@ -268,15 +274,20 @@ void draw_clip_pop(void)
     apply_clip();
 }
 
-void draw_begin(int pw, int ph, int scale)
+static int whole(float s)
 {
-    if (scale < 1)
-        scale = 1;
+    return s - (float)(int)s < 0.01f;
+}
+
+void draw_begin(int pw, int ph, float scale)
+{
+    if (scale < 1.0f)
+        scale = 1.0f;
     px_w = pw;
     px_h = ph;
     cur_scale = scale;
-    lw = (pw + scale - 1) / scale;
-    lh = (ph + scale - 1) / scale;
+    lw = (int)(pw / scale + 0.999f);
+    lh = (int)(ph / scale + 0.999f);
     if (lw < 1)
         lw = 1;
     if (lh < 1)
@@ -318,13 +329,37 @@ void draw_end(void)
 {
     flush();
     glDisable(GL_SCISSOR_TEST);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glViewport(0, 0, px_w, px_h);
     /* Top-left aligned: GL's origin is bottom-left, so the logical frame's
      * top row lands on the window's top row. */
-    glBlitFramebuffer(0, 0, lw, lh, 0, px_h - lh * cur_scale, lw * cur_scale, px_h,
-                      GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    if (whole(cur_scale)) {
+        int k = (int)(cur_scale + 0.5f);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBlitFramebuffer(0, 0, lw, lh, 0, px_h - lh * k, lw * k, px_h, GL_COLOR_BUFFER_BIT,
+                          GL_NEAREST);
+    } else {
+        int k = (int)cur_scale + 1, bw = lw * k, bh = lh * k;
+        int dw = (int)(lw * cur_scale + 0.5f), dh = (int)(lh * cur_scale + 0.5f);
+        if (bw > big_w || bh > big_h) {
+            big_w = bw > big_w ? bw + 512 : big_w;
+            big_h = bh > big_h ? bh + 512 : big_h;
+            glBindTexture(GL_TEXTURE_2D, big_tex);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, big_w, big_h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                         NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glBindFramebuffer(GL_FRAMEBUFFER, big_fbo);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, big_tex, 0);
+            glBindTexture(GL_TEXTURE_2D, atlas_tex);
+        }
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, big_fbo);
+        glBlitFramebuffer(0, 0, lw, lh, 0, 0, bw, bh, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, big_fbo);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBlitFramebuffer(0, 0, bw, bh, 0, px_h - dh, dw, px_h, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     frame_calls = stat_calls + 1;
     frame_quads = stat_quads;
@@ -340,7 +375,7 @@ int draw_height(void)
     return lh;
 }
 
-int draw_scale(void)
+float draw_scale(void)
 {
     return cur_scale;
 }

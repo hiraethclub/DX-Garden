@@ -30,11 +30,17 @@
 enum {
     CMD_NONE,
     CMD_PLAY, CMD_STOP, CMD_EXIT,
-    CMD_TOOLBAR, CMD_STATUSBAR, CMD_SCALE_AUTO, CMD_SCALE_1, CMD_SCALE_2, CMD_SCALE_3,
+    CMD_TOOLBAR, CMD_STATUSBAR, CMD_SCALE_AUTO, CMD_ZOOM_IN, CMD_ZOOM_OUT,
+    CMD_SCALE_FIRST, /* CMD_SCALE_FIRST + i is SCALES[i] */
+    CMD_SCALE_LAST = CMD_SCALE_FIRST + 6,
     CMD_SMOOTH,
     CMD_CASCADE, CMD_TILE, CMD_SHOW_PLAYER, CMD_SHOW_GALLERY,
     CMD_ABOUT
 };
+
+/* Interface sizes, in percent. */
+static const int SCALES[] = { 100, 125, 150, 175, 200, 250, 300 };
+#define N_SCALES ((int)(sizeof(SCALES) / sizeof(SCALES[0])))
 
 typedef struct {
     const char *name;
@@ -55,14 +61,14 @@ static struct {
     SDL_Window *win;
     char config_path[1024];
     config cfg;
-    int scale_setting; /* 0 auto, else 1-3 */
+    int scale_setting; /* percent, 0 for automatic */
     int show_toolbar, show_status;
     int volume, muted;
     int quit;
 
     /* Layout of the last frame, for hit testing (logical pixels). */
     int frame_b, caption_y, caption_x1, title_buttons_x;
-    int cur_scale;
+    float cur_scale;
     float px_per_point;
 
     player_status st;
@@ -107,7 +113,11 @@ static void load_settings(void)
         report_free(&rep);
         free(buf);
     }
-    A.scale_setting = config_get_int(&A.cfg, "ui", "scale", 0, 0, 4);
+    A.scale_setting = config_get_int(&A.cfg, "ui", "scale", 0, 0, 300);
+    if (A.scale_setting > 0 && A.scale_setting <= 4)
+        A.scale_setting *= 100; /* build 32 stored 1-3 */
+    if (A.scale_setting && A.scale_setting < 100)
+        A.scale_setting = 100;
     A.show_toolbar = config_get_int(&A.cfg, "ui", "toolbar", 1, 0, 1);
     A.show_status = config_get_int(&A.cfg, "ui", "status_bar", 1, 0, 1);
     A.volume = config_get_int(&A.cfg, "player", "volume", 80, 0, 100);
@@ -511,13 +521,20 @@ static ui_menu_item file_items[] = {
     { "E&xit", "Alt+F4", CMD_EXIT, 0, NULL },
 };
 static ui_menu_item size_items[] = {
-    { "&Automatic", NULL, CMD_SCALE_AUTO, MI_RADIO, NULL },
+    { "&Automatic", "Ctrl+0", CMD_SCALE_AUTO, MI_RADIO, NULL },
     { NULL, NULL, 0, MI_SEPARATOR, NULL },
-    { "&100%", NULL, CMD_SCALE_1, MI_RADIO, NULL },
-    { "&200%", NULL, CMD_SCALE_2, MI_RADIO, NULL },
-    { "&300%", NULL, CMD_SCALE_3, MI_RADIO, NULL },
+    { "&100%", NULL, CMD_SCALE_FIRST + 0, MI_RADIO, NULL },
+    { "12&5%", NULL, CMD_SCALE_FIRST + 1, MI_RADIO, NULL },
+    { "1&50%", NULL, CMD_SCALE_FIRST + 2, MI_RADIO, NULL },
+    { "1&75%", NULL, CMD_SCALE_FIRST + 3, MI_RADIO, NULL },
+    { "&200%", NULL, CMD_SCALE_FIRST + 4, MI_RADIO, NULL },
+    { "25&0%", NULL, CMD_SCALE_FIRST + 5, MI_RADIO, NULL },
+    { "&300%", NULL, CMD_SCALE_FIRST + 6, MI_RADIO, NULL },
+    { NULL, NULL, 0, MI_SEPARATOR, NULL },
+    { "&Larger", "Ctrl++", CMD_ZOOM_IN, 0, NULL },
+    { "S&maller", "Ctrl+-", CMD_ZOOM_OUT, 0, NULL },
 };
-static ui_menu size_menu = { size_items, 5 };
+static ui_menu size_menu = { size_items, 12 };
 static ui_menu_item view_items[] = {
     { "&Toolbar", NULL, CMD_TOOLBAR, 0, NULL },
     { "Status &Bar", NULL, CMD_STATUSBAR, 0, NULL },
@@ -547,9 +564,13 @@ static void update_menu_checks(void)
     view_items[0].flags = A.show_toolbar ? MI_CHECKED : 0;
     view_items[1].flags = A.show_status ? MI_CHECKED : 0;
     view_items[4].flags = font_smooth() ? MI_CHECKED : 0;
-    for (i = 0; i < 5; i++)
+    for (i = 0; i < 12; i++)
         size_items[i].flags &= ~MI_CHECKED;
-    size_items[A.scale_setting == 0 ? 0 : A.scale_setting + 1].flags |= MI_CHECKED;
+    if (A.scale_setting == 0)
+        size_items[0].flags |= MI_CHECKED;
+    for (i = 0; i < N_SCALES; i++)
+        if (SCALES[i] == A.scale_setting)
+            size_items[2 + i].flags |= MI_CHECKED;
     window_items[3].flags = A.w_player->open ? MI_CHECKED : 0;
     window_items[4].flags = A.w_gallery->open ? MI_CHECKED : 0;
 }
@@ -563,14 +584,38 @@ static void command(int cmd)
     case CMD_TOOLBAR: A.show_toolbar = !A.show_toolbar; break;
     case CMD_STATUSBAR: A.show_status = !A.show_status; break;
     case CMD_SCALE_AUTO: A.scale_setting = 0; break;
-    case CMD_SCALE_1: A.scale_setting = 1; break;
-    case CMD_SCALE_2: A.scale_setting = 2; break;
-    case CMD_SCALE_3: A.scale_setting = 3; break;
+    case CMD_ZOOM_IN:
+    case CMD_ZOOM_OUT: {
+        /* From the size in use (automatic included) to the next step. */
+        int cur = (int)(A.cur_scale * 100 + 0.5f), i, pick = cur;
+        if (cmd == CMD_ZOOM_IN) {
+            for (i = 0; i < N_SCALES; i++)
+                if (SCALES[i] > cur) {
+                    pick = SCALES[i];
+                    break;
+                }
+        } else {
+            for (i = N_SCALES - 1; i >= 0; i--)
+                if (SCALES[i] < cur) {
+                    pick = SCALES[i];
+                    break;
+                }
+        }
+        A.scale_setting = pick;
+        break;
+    }
     case CMD_SMOOTH: font_set_smooth(!font_smooth()); break;
     case CMD_CASCADE: ui_cascade(); break;
     case CMD_TILE: ui_tile(); break;
     case CMD_SHOW_PLAYER: ui_window_show(A.w_player); break;
     case CMD_SHOW_GALLERY: ui_window_show(A.w_gallery); break;
+    case CMD_SCALE_FIRST + 0:
+    case CMD_SCALE_FIRST + 1:
+    case CMD_SCALE_FIRST + 2:
+    case CMD_SCALE_FIRST + 3:
+    case CMD_SCALE_FIRST + 4:
+    case CMD_SCALE_FIRST + 5:
+    case CMD_SCALE_FIRST + 6: A.scale_setting = SCALES[cmd - CMD_SCALE_FIRST]; break;
     case CMD_ABOUT:
         ui_window_center(A.w_about);
         UI.focus = 0;
@@ -582,21 +627,26 @@ static void command(int cmd)
 
 /* ---- the main window ---- */
 
-static int auto_scale(void)
+/* Windows' display scale for the monitor the window is on, to the nearest
+ * size on the menu. */
+static float auto_scale(void)
 {
-    float s = SDL_GetWindowDisplayScale(A.win);
-    int k = (int)(s + 0.25f); /* 125% stays at 1x, 175% goes to 2x */
-    return k < 1 ? 1 : k > 4 ? 4 : k;
+    float s = SDL_GetWindowDisplayScale(A.win) * 100.0f;
+    int i, best = 0;
+    for (i = 1; i < N_SCALES; i++)
+        if (SDL_fabsf(SCALES[i] - s) < SDL_fabsf(SCALES[best] - s))
+            best = i;
+    return SCALES[best] / 100.0f;
 }
 
 static SDL_HitTestResult SDLCALL hit_test(SDL_Window *win, const SDL_Point *pt, void *ud)
 {
-    float k = A.px_per_point / (float)(A.cur_scale ? A.cur_scale : 1);
+    float sc = A.cur_scale > 0 ? A.cur_scale : 1.0f, k = A.px_per_point / sc;
     int x = (int)(pt->x * k), y = (int)(pt->y * k), w, h, b = A.frame_b;
     (void)ud;
     SDL_GetWindowSizeInPixels(win, &w, &h);
-    w /= A.cur_scale ? A.cur_scale : 1;
-    h /= A.cur_scale ? A.cur_scale : 1;
+    w = (int)(w / sc);
+    h = (int)(h / sc);
     if (b) {
         int top = y < b, bottom = y >= h - b, left = x < b + 8, right = x >= w - b - 8;
         int edge_l = x < b, edge_r = x >= w - b;
@@ -678,7 +728,22 @@ void app_event(const SDL_Event *e)
     SDL_GetWindowSizeInPixels(A.win, &pw, &ph);
     SDL_GetWindowSize(A.win, &ww, &wh);
     A.px_per_point = ww > 0 ? (float)pw / (float)ww : 1.0f;
-    ui_event(e, A.px_per_point / (float)(A.cur_scale ? A.cur_scale : 1));
+    if (e->type == SDL_EVENT_KEY_DOWN && (e->key.mod & SDL_KMOD_CTRL)) {
+        /* Interface size from the keyboard, as in a browser. */
+        if (e->key.key == SDLK_EQUALS || e->key.key == SDLK_PLUS || e->key.key == SDLK_KP_PLUS) {
+            command(CMD_ZOOM_IN);
+            return;
+        }
+        if (e->key.key == SDLK_MINUS || e->key.key == SDLK_KP_MINUS) {
+            command(CMD_ZOOM_OUT);
+            return;
+        }
+        if (e->key.key == SDLK_0 || e->key.key == SDLK_KP_0) {
+            command(CMD_SCALE_AUTO);
+            return;
+        }
+    }
+    ui_event(e, A.px_per_point / (A.cur_scale > 0 ? A.cur_scale : 1.0f));
 }
 
 static void set_cursor(SDL_SystemCursor c)
@@ -728,7 +793,7 @@ int app_frame(void)
     SDL_GetWindowSizeInPixels(A.win, &pw, &ph);
     SDL_GetWindowSize(A.win, &ww, &wh);
     A.px_per_point = ww > 0 ? (float)pw / (float)ww : 1.0f;
-    A.cur_scale = A.scale_setting ? A.scale_setting : auto_scale();
+    A.cur_scale = A.scale_setting ? A.scale_setting / 100.0f : auto_scale();
 
     player_update();
     player_get_status(&A.st);

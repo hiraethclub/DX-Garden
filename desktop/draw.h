@@ -2,9 +2,12 @@
  * 2D drawing for the Windows 9x interface, on OpenGL 3.3.
  *
  * Everything is drawn in "logical" pixels into an offscreen buffer, which
- * is then scaled up to the window by a whole number (1x, 2x, 3x...) with no
- * filtering. A 1-pixel bevel stays exactly 1 logical pixel wide at any
- * size, as on a 640x480 screen.
+ * is then scaled up to the window. Whole-number sizes (100%, 200%) scale
+ * with no filtering, so a 1-pixel bevel stays exactly one logical pixel
+ * wide, as on a 640x480 screen. Sizes in between (125%, 150%) use "sharp
+ * bilinear": scale up by the next whole number without filtering, then
+ * down to the exact size with filtering, which keeps every line the same
+ * width at the cost of slightly soft edges.
  *
  * Solid rectangles, glyphs and icons all come from one atlas texture, so a
  * frame is a handful of draw calls.
@@ -31,14 +34,15 @@ typedef struct {
 int draw_init(void);
 void draw_shutdown(void);
 
-/* A frame for a window of px_w x px_h real pixels at `scale`. */
-void draw_begin(int px_w, int px_h, int scale);
+/* A frame for a window of px_w x px_h real pixels at `scale` (1.0 is
+ * 100%). */
+void draw_begin(int px_w, int px_h, float scale);
 /* Scales the frame up onto the window. The caller swaps buffers. */
 void draw_end(void);
 /* The frame's size in logical pixels. */
 int draw_width(void);
 int draw_height(void);
-int draw_scale(void);
+float draw_scale(void);
 
 void draw_rect(int x, int y, int w, int h, unsigned col);
 /* A rectangle filled with a 1-pixel checkerboard of two colours, as 9x

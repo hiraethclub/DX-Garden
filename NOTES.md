@@ -1389,3 +1389,15 @@ and 200%, on the Linux build and the Windows build under Wine.
   on any GPU, but W7 should let it idle when nothing changes.
 - The gallery's station list sorts names with leading punctuation first
   ("'tis Vloms", "(((EBM-Radio)))"); W3 will use core's folded sort keys.
+
+## Build 33: in-between interface sizes (2026-10-30)
+
+From the build 32 test: 100% was too small and 200% too big. View,
+Interface Size now has 100, 125, 150, 175, 200, 250 and 300%, plus
+Ctrl+Plus, Ctrl+Minus and Ctrl+0 (back to Automatic). Automatic now
+follows Windows' display scale to the nearest step (build 32 rounded 150%
+down to 100%). Whole-number sizes stay pixel-exact; the others use "sharp
+bilinear" scaling (enlarge by the next whole number without filtering,
+then shrink to size with filtering), so every line keeps the same width
+and edges are only slightly soft. `config.ini` now stores the size in
+percent; build 32's 1-3 values are read as 100-300.
