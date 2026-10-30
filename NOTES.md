@@ -1331,3 +1331,61 @@ Made by Aisling, before any of it is built:
 
 **Test builds:** each one goes to GitHub as a pre-release (tag
 `win-b<build>`) with the zip attached, for testing on a Windows PC.
+
+## Windows port, W2: the Windows 9x interface (build 32, 2026-10-30)
+
+**How it is drawn.** OpenGL 3.3 (`desktop/gl.c` loads it through SDL).
+The interface is drawn at "logical" pixel size into an offscreen buffer
+and scaled up by a whole number with no smoothing, so 1-pixel bevels stay
+exactly 1 pixel at 100%, 200% or 300% (View, Interface Size; Automatic
+picks from Windows' display scale: 125% stays 1x, 175% and up is 2x).
+Glyphs, icons and solid fills share one 2048x2048 atlas, so a frame is a
+few draw calls. The globe (W4) will draw at full resolution underneath.
+
+**Toolkit** (`desktop/ui.c`, `ui_widgets.c`): windows and menus are kept
+between frames; controls are immediate-mode, called from each window's
+draw function. It has: the main window's own 9x frame and title bar (no
+system frame; hit testing tells Windows where to drag and resize, so snap
+still works), a menu bar with access keys (Alt, F10, Alt+letter, arrows),
+submenus, check and radio items, a toolbar, child windows inside a
+workspace (move, resize, minimise, maximise, cascade, tile, z-order,
+modal dialogs), buttons (default, focus, disabled), check boxes, radio
+buttons, group boxes, edit boxes (caret, selection, clipboard, IME),
+drop-down lists, progress bars, sliders, scroll bars with auto-repeat,
+tabs, a status bar with size grip, tooltips, message boxes, a virtual
+list view (sortable, resizable columns) and a tree view with dotted lines.
+Tab moves the focus between controls.
+
+**Look.** The standard 9x colour scheme (grey 3D faces, navy selection,
+navy-to-blue title gradient, grey workspace). The art is our own: every
+icon is pixel art made for DX Garden in `desktop/icons.c`, from character
+grids or drawn in code. No Microsoft artwork, fonts or sounds.
+
+**Font.** Liberation Sans 11 px (8 point at 96 dpi), drawn without
+smoothing as 9x drew screen fonts; View, Smooth Screen Fonts turns
+smoothing on. Liberation Sans 2.1.5 (OFL 1.1, Arial's metrics) was the
+closest match among free fonts in a side-by-side test against Noto Sans;
+Noto stays as the fallback for everything else (Greek, Cyrillic and the
+other scripts the Vita app supports). Both ship in `fonts/` with their
+licences.
+
+**What W2 shows.** "Now Playing" (the W1 player: a test stream list, an
+address box, Play, Stop, volume) and a "Control Gallery" with every
+control, including a list and tree of the bundled 7,538 stations
+(double-click a station to play it). Settings are saved in `config.ini` in
+the data folder.
+
+**Checked here** with a new `--script` option that feeds clicks and keys
+and takes screenshots: menus, submenus, tabs, list and tree keyboard
+navigation, message boxes, minimise and maximise, font smoothing, at 100%
+and 200%, on the Linux build and the Windows build under Wine.
+
+**Known issues**
+
+- Dragging, snapping and resizing the main window couldn't be checked
+  here (the test display has no window manager). Needs a check on Windows.
+- No system menu yet (the title bar icon, Alt+Space).
+- The interface redraws every frame at the display's refresh rate. Cheap
+  on any GPU, but W7 should let it idle when nothing changes.
+- The gallery's station list sorts names with leading punctuation first
+  ("'tis Vloms", "(((EBM-Radio)))"); W3 will use core's folded sort keys.

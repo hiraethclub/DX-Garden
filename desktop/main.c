@@ -1,15 +1,18 @@
 /*
  * DX Garden for Windows (and Linux, for development).
  *
- * W1: plays one stream. A plain status window drawn with SDL's debug font;
- * the Windows 9x interface replaces it in W2.
- *
- *   dxgarden                      window, number keys pick a test stream
- *   dxgarden --play URL           window, starts URL
+ *   dxgarden                      the app
  *   dxgarden --play URL --seconds N
  *                                 no window: plays for N seconds, prints the
  *                                 status each second, exits 0 if it played
  *   --verbose                     copy the log to stderr
+ *   --screenshot FILE --frames N  draw N frames, save the last as a BMP and
+ *                                 quit (for checking the interface by script)
+ *   --script "STEPS"              feed input, ';'-separated, one step a frame:
+ *                                 move X Y, click X Y, dclick X Y, rclick X Y,
+ *                                 down X Y, up X Y, key NAME (an SDL key name,
+ *                                 "alt+f" style modifiers), wait N, shot FILE,
+ *                                 quit. Coordinates are window points.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,31 +26,17 @@
 #include <windows.h>
 #endif
 
+#include "app.h"
+#include "draw.h"
+#include "gl.h"
 #include "log.h"
 #include "player.h"
 
 #define RING_BYTES (2 * 1024 * 1024) /* about 2 minutes at 128 kbps */
 #define PREBUFFER_BYTES (64 * 1024)  /* about 4 s at 128 kbps */
 
-#define WIN_W 960
-#define WIN_H 600
-
-typedef struct {
-    const char *name;
-    const char *url;
-} test_stream;
-
-/* Picked to cover the player's paths: plain MP3 over HTTPS, a playlist
- * that points at a stream, plain HTTP, and a format we refuse clearly. */
-static const test_stream tests[] = {
-    { "Radio Camarthenshire (MP3, HTTPS)",
-      "https://listen-nation.sharp-stream.com/tccarmarthenshire.mp3" },
-    { "SomaFM Groove Salad (PLS playlist)", "https://somafm.com/groovesalad.pls" },
-    { "SomaFM Groove Salad (MP3, HTTP)", "http://ice1.somafm.com/groovesalad-128-mp3" },
-    { "SomaFM Groove Salad (AAC, should be refused)",
-      "https://ice1.somafm.com/groovesalad-128-aac" },
-};
-#define N_TESTS ((int)(sizeof(tests) / sizeof(tests[0])))
+#define WIN_W 1024
+#define WIN_H 720
 
 static const char *state_name(player_state s)
 {
@@ -124,129 +113,222 @@ static int run_headless(const char *url, int seconds)
     return played ? 0 : 1;
 }
 
-static void text(SDL_Renderer *r, float x, float y, Uint8 c, const char *s)
+/* Saves the window's pixels as a 24-bit BMP. */
+static void save_screenshot(SDL_Window *win, const char *path)
 {
-    SDL_SetRenderDrawColor(r, c, c, c, 255);
-    SDL_RenderDebugText(r, x, y, s);
+    int w, h;
+    SDL_Surface *surf;
+    SDL_GetWindowSizeInPixels(win, &w, &h);
+    surf = SDL_CreateSurface(w, h, SDL_PIXELFORMAT_ABGR8888);
+    if (!surf)
+        return;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    {
+        /* glReadPixels isn't in the loader's list; read through SDL's. */
+        typedef void(APIENTRY * read_fn)(GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, void *);
+        read_fn rp = (read_fn)SDL_GL_GetProcAddress("glReadPixels");
+        int y;
+        unsigned char *tmp = malloc((size_t)w * 4);
+        if (rp && tmp) {
+            dxg_glPixelStorei(GL_PACK_ALIGNMENT, 4);
+            rp(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, surf->pixels);
+            /* GL rows run bottom-up. */
+            for (y = 0; y < h / 2; y++) {
+                unsigned char *a = (unsigned char *)surf->pixels + (size_t)y * surf->pitch;
+                unsigned char *b = (unsigned char *)surf->pixels + (size_t)(h - 1 - y) * surf->pitch;
+                memcpy(tmp, a, (size_t)w * 4);
+                memcpy(a, b, (size_t)w * 4);
+                memcpy(b, tmp, (size_t)w * 4);
+            }
+        }
+        free(tmp);
+    }
+    SDL_SaveBMP(surf, path);
+    SDL_DestroySurface(surf);
+    LOG("screenshot: %s", path);
 }
 
-static void draw(SDL_Renderer *r, const player_status *st, int sel, int volume)
+/* ---- --script ---- */
+
+static void push_mouse(Uint32 type, float x, float y, int button, int clicks)
 {
-    char line[512];
-    SDL_FRect bar;
-    int i;
-    float y = 24;
-
-    SDL_SetRenderDrawColor(r, 0, 128, 128, 255); /* the classic desktop teal */
-    SDL_RenderClear(r);
-    SDL_SetRenderScale(r, 2, 2);
-
-    snprintf(line, sizeof(line), "DX Garden %s (build %s), W1 player test", DXG_VERSION, DXG_BUILD);
-    text(r, 12, 12, 255, line);
-    y = 36;
-    for (i = 0; i < N_TESTS; i++, y += 12) {
-        snprintf(line, sizeof(line), "%c %d  %s", i == sel ? '>' : ' ', i + 1, tests[i].name);
-        text(r, 12, y, i == sel ? 255 : 200, line);
+    SDL_Event e;
+    SDL_zero(e);
+    e.type = type;
+    if (type == SDL_EVENT_MOUSE_MOTION) {
+        e.motion.x = x;
+        e.motion.y = y;
+    } else {
+        e.button.x = x;
+        e.button.y = y;
+        e.button.button = (Uint8)button;
+        e.button.clicks = (Uint8)clicks;
+        e.button.down = type == SDL_EVENT_MOUSE_BUTTON_DOWN;
     }
-    y += 12;
-    status_line(st, line, sizeof(line));
-    text(r, 12, y, 255, line);
-    y += 12;
-    if (st->title[0]) {
-        snprintf(line, sizeof(line), "Now playing: %s", st->title);
-        text(r, 12, y, 255, line);
-    }
-    y += 12;
-    if (st->icy_name[0]) {
-        snprintf(line, sizeof(line), "Station: %s", st->icy_name);
-        text(r, 12, y, 220, line);
-    }
-    y += 12;
-    snprintf(line, sizeof(line), "%ld Hz, %d kbps, MPEG %s layer %d, decode %u%% of real time",
-             st->rate, st->bitrate_kbps,
-             st->mpeg_version == 25 ? "2.5" : st->mpeg_version == 2 ? "2" : "1", st->layer,
-             st->decode_load_pct);
-    text(r, 12, y, 220, line);
-    y += 16;
-
-    snprintf(line, sizeof(line), "Buffer %u%% of %u KB, %u underruns", st->fill_pct,
-             (unsigned)(st->capacity / 1024), st->underruns);
-    text(r, 12, y, 220, line);
-    y += 12;
-    bar.x = 12;
-    bar.y = y;
-    bar.w = 300;
-    bar.h = 8;
-    SDL_SetRenderDrawColor(r, 0, 0, 0, 255);
-    SDL_RenderFillRect(r, &bar);
-    bar.w = 300.0f * st->fill_pct / 100.0f;
-    SDL_SetRenderDrawColor(r, 0, 0, 128, 255);
-    SDL_RenderFillRect(r, &bar);
-    y += 20;
-
-    snprintf(line, sizeof(line), "Volume %d%%", volume);
-    text(r, 12, y, 220, line);
-    y += 20;
-    text(r, 12, y, 200, "1-4 play   S stop   +/- volume   Esc quit");
-
-    SDL_SetRenderScale(r, 1, 1);
-    SDL_RenderPresent(r);
+    SDL_PushEvent(&e);
 }
 
-static int run_window(const char *url)
+static void push_key(const char *spec)
 {
+    SDL_Event e;
+    SDL_Keymod mod = SDL_KMOD_NONE;
+    char name[64];
+    const char *p = spec;
+    for (;;) {
+        if (SDL_strncasecmp(p, "alt+", 4) == 0) {
+            mod |= SDL_KMOD_LALT;
+            p += 4;
+        } else if (SDL_strncasecmp(p, "ctrl+", 5) == 0) {
+            mod |= SDL_KMOD_LCTRL;
+            p += 5;
+        } else if (SDL_strncasecmp(p, "shift+", 6) == 0) {
+            mod |= SDL_KMOD_LSHIFT;
+            p += 6;
+        } else {
+            break;
+        }
+    }
+    snprintf(name, sizeof(name), "%s", p);
+    SDL_zero(e);
+    e.type = SDL_EVENT_KEY_DOWN;
+    e.key.key = SDL_GetKeyFromName(name);
+    e.key.mod = mod;
+    e.key.down = true;
+    SDL_PushEvent(&e);
+    e.type = SDL_EVENT_KEY_UP;
+    e.key.down = false;
+    SDL_PushEvent(&e);
+}
+
+/* Runs script steps up to the next wait. Returns 0 on "quit". */
+static int script_step(SDL_Window *win, char **cursor, int *wait)
+{
+    char step[256];
+    while (**cursor) {
+        char *end = strchr(*cursor, ';');
+        size_t n = end ? (size_t)(end - *cursor) : strlen(*cursor);
+        float x = 0, y = 0;
+        char arg[200] = "";
+        if (*wait > 0) {
+            (*wait)--;
+            return 1;
+        }
+        if (n >= sizeof(step))
+            n = sizeof(step) - 1;
+        memcpy(step, *cursor, n);
+        step[n] = '\0';
+        *cursor += n + (end ? 1 : 0);
+        while (**cursor == ' ')
+            (*cursor)++;
+        if (sscanf(step, " move %f %f", &x, &y) == 2) {
+            push_mouse(SDL_EVENT_MOUSE_MOTION, x, y, 0, 0);
+        } else if (sscanf(step, " click %f %f", &x, &y) == 2) {
+            push_mouse(SDL_EVENT_MOUSE_MOTION, x, y, 0, 0);
+            push_mouse(SDL_EVENT_MOUSE_BUTTON_DOWN, x, y, SDL_BUTTON_LEFT, 1);
+            *wait = 1; /* let a frame see the press before the release */
+            {
+                /* Queue the release as the next step. *cursor may already
+                 * point into one of these buffers, so alternate. */
+                static char rest[2][8192];
+                static int k;
+                k ^= 1;
+                snprintf(rest[k], sizeof(rest[k]), "up %f %f;%s", x, y, *cursor);
+                *cursor = rest[k];
+            }
+            return 1;
+        } else if (sscanf(step, " dclick %f %f", &x, &y) == 2) {
+            push_mouse(SDL_EVENT_MOUSE_MOTION, x, y, 0, 0);
+            push_mouse(SDL_EVENT_MOUSE_BUTTON_DOWN, x, y, SDL_BUTTON_LEFT, 2);
+            push_mouse(SDL_EVENT_MOUSE_BUTTON_UP, x, y, SDL_BUTTON_LEFT, 2);
+        } else if (sscanf(step, " rclick %f %f", &x, &y) == 2) {
+            push_mouse(SDL_EVENT_MOUSE_MOTION, x, y, 0, 0);
+            push_mouse(SDL_EVENT_MOUSE_BUTTON_DOWN, x, y, SDL_BUTTON_RIGHT, 1);
+            push_mouse(SDL_EVENT_MOUSE_BUTTON_UP, x, y, SDL_BUTTON_RIGHT, 1);
+        } else if (sscanf(step, " down %f %f", &x, &y) == 2) {
+            push_mouse(SDL_EVENT_MOUSE_MOTION, x, y, 0, 0);
+            push_mouse(SDL_EVENT_MOUSE_BUTTON_DOWN, x, y, SDL_BUTTON_LEFT, 1);
+        } else if (sscanf(step, " up %f %f", &x, &y) == 2) {
+            push_mouse(SDL_EVENT_MOUSE_MOTION, x, y, 0, 0);
+            push_mouse(SDL_EVENT_MOUSE_BUTTON_UP, x, y, SDL_BUTTON_LEFT, 1);
+        } else if (sscanf(step, " key %199s", arg) == 1) {
+            push_key(arg);
+        } else if (sscanf(step, " wait %f", &x) == 1) {
+            *wait = (int)x;
+            return 1;
+        } else if (sscanf(step, " shot %199s", arg) == 1) {
+            save_screenshot(win, arg);
+        } else if (strstr(step, "quit")) {
+            return 0;
+        }
+        return 1;
+    }
+    return 1;
+}
+
+static int run_window(const char *data, const char *shot, int frames, int start_w, int start_h,
+                      char *script)
+{
+    int script_wait = 0;
     SDL_Window *win;
-    SDL_Renderer *ren;
-    player_status st;
-    int sel = url ? -1 : 0, volume = 100, quit = 0;
+    SDL_GLContext gl;
+    const char *missing = NULL;
+    const char *base = SDL_GetBasePath();
+    int frame = 0;
 
-    if (!SDL_CreateWindowAndRenderer("DX Garden", WIN_W, WIN_H, SDL_WINDOW_RESIZABLE, &win, &ren)) {
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    win = SDL_CreateWindow("DX Garden", start_w, start_h,
+                           SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_BORDERLESS |
+                               SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_HIDDEN);
+    if (!win) {
         LOG("video: %s", SDL_GetError());
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "DX Garden", SDL_GetError(), NULL);
         return 1;
     }
-    SDL_SetRenderVSync(ren, 1);
-    LOG("video: renderer %s", SDL_GetRendererName(ren));
-    if (url)
-        player_start(url, PREBUFFER_BYTES);
-
-    while (!quit) {
-        SDL_Event e;
-        while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_EVENT_QUIT) {
-                quit = 1;
-            } else if (e.type == SDL_EVENT_KEY_DOWN && !e.key.repeat) {
-                SDL_Keycode k = e.key.key;
-                if (k == SDLK_ESCAPE) {
-                    quit = 1;
-                } else if (k >= SDLK_1 && k < SDLK_1 + N_TESTS) {
-                    sel = (int)(k - SDLK_1);
-                    LOG("ui: test stream %d", sel + 1);
-                    player_start(tests[sel].url, PREBUFFER_BYTES);
-                } else if (k == SDLK_S) {
-                    player_stop();
-                } else if (k == SDLK_EQUALS || k == SDLK_PLUS || k == SDLK_KP_PLUS) {
-                    volume = volume + 10 > 100 ? 100 : volume + 10;
-                    player_set_volume(volume);
-                } else if (k == SDLK_MINUS || k == SDLK_KP_MINUS) {
-                    volume = volume - 10 < 0 ? 0 : volume - 10;
-                    player_set_volume(volume);
-                }
-            }
-        }
-        player_update();
-        player_get_status(&st);
-        draw(ren, &st, sel, volume);
+    SDL_SetWindowMinimumSize(win, 480, 360);
+    gl = SDL_GL_CreateContext(win);
+    if (!gl || gl_load(&missing) != 0) {
+        char msg[512];
+        snprintf(msg, sizeof(msg),
+                 "DX Garden needs OpenGL 3.3, which this PC's graphics driver didn't provide "
+                 "(%s). Updating the graphics driver may help.",
+                 gl ? missing : SDL_GetError());
+        LOG("video: %s", msg);
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "DX Garden", msg, win);
+        return 1;
     }
-    SDL_DestroyRenderer(ren);
+    SDL_GL_SetSwapInterval(1);
+    if (app_init(win, base ? base : "./", data) != 0)
+        return 1;
+    SDL_ShowWindow(win);
+
+    for (;;) {
+        SDL_Event e;
+        if (script && !script_step(win, &script, &script_wait))
+            break;
+        while (SDL_PollEvent(&e))
+            app_event(&e);
+        if (!app_frame())
+            break;
+        if (shot && ++frame >= frames) {
+            save_screenshot(win, shot);
+            break;
+        }
+    }
+    app_shutdown();
+    SDL_GL_DestroyContext(gl);
     SDL_DestroyWindow(win);
     return 0;
 }
 
 int main(int argc, char **argv)
 {
-    const char *url = NULL;
-    int seconds = 0, verbose = 0, i, rc;
+    const char *url = NULL, *shot = NULL;
+    char *script = NULL;
+    int seconds = 0, verbose = 0, frames = 30, start_w = WIN_W, start_h = WIN_H, i, rc;
     char *dir;
 
 #ifdef _WIN32
@@ -264,6 +346,16 @@ int main(int argc, char **argv)
             seconds = atoi(argv[++i]);
         else if (strcmp(argv[i], "--verbose") == 0)
             verbose = 1;
+        else if (strcmp(argv[i], "--script") == 0 && i + 1 < argc)
+            script = argv[++i];
+        else if (strcmp(argv[i], "--screenshot") == 0 && i + 1 < argc)
+            shot = argv[++i];
+        else if (strcmp(argv[i], "--frames") == 0 && i + 1 < argc)
+            frames = atoi(argv[++i]);
+        else if (strcmp(argv[i], "--size") == 0 && i + 2 < argc) {
+            start_w = atoi(argv[++i]);
+            start_h = atoi(argv[++i]);
+        }
     }
 
     SDL_SetAppMetadata("DX Garden", DXG_VERSION, "club.hiraeth.dxgarden");
@@ -292,7 +384,7 @@ int main(int argc, char **argv)
     if (seconds > 0 && url)
         rc = run_headless(url, seconds);
     else
-        rc = run_window(url);
+        rc = run_window(dir, shot, frames, start_w, start_h, script);
 
     player_shutdown();
     curl_global_cleanup();
