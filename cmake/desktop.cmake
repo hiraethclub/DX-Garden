@@ -38,10 +38,14 @@ endif()
 add_executable(dxgarden_desktop WIN32
     ${CORE_SOURCES}
     desktop/app.c
+    desktop/data.c
     desktop/draw.c
     desktop/font.c
+    desktop/fs.c
+    desktop/gallery.c
     desktop/gl.c
     desktop/icons.c
+    desktop/library_view.c
     desktop/log.c
     desktop/main.c
     desktop/player.c
@@ -58,6 +62,10 @@ target_link_libraries(dxgarden_desktop PRIVATE SDL3::SDL3-static ${DXG_CURL} ${D
 if(WIN32)
     target_compile_definitions(dxgarden_desktop PRIVATE CURL_STATICLIB WIN32_LEAN_AND_MEAN
                                FRIBIDI_LIB_STATIC)
+    enable_language(RC)
+    target_sources(dxgarden_desktop PRIVATE desktop/dxgarden.rc)
+    set_property(SOURCE desktop/dxgarden.rc APPEND PROPERTY OBJECT_DEPENDS
+                 "${CMAKE_SOURCE_DIR}/desktop/dxgarden.manifest")
 endif()
 
 # What the app reads at run time, next to the executable: fonts/ and the

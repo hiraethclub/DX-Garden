@@ -81,7 +81,7 @@ ORF Hitradio Ö3 | https://ors-sn03.ors-shoutcast.at/oe3-q1a | Austria | Vienna 
 Radio Republika | https://ssl-1.radiotvrepublika.pl:12698/stream | Poland | Warsaw | 52.2298 | 21.0117 | news, news talk | MP3 128k rb:f837704e-40df-4302-b546-c8401348e51c
 Virgin Radio UK | https://radio.virginradio.co.uk/stream | England | London | 51.5052 | -0.0877 | 00s, 80s | MP3 ?k rb:7d196930-5f3d-45e2-b11a-d261c4515161 (country: England, where the position is)
 80s Drive | https://samcloud.spacial.com/api/listen?sid=111415&m=sc&rid=293634&t=ssl?&80sradio128mp3stereo44 | United States | Detroit | 42.3569 | -83.0003 | 80s, 1980 | MP3 128k rb:49ad5236-61ab-4c07-b4b6-a8da11bffe83
-Pyongyang Radio FM | https://listen7.myradio24.com/69366 | Democratic Peoples Republic Of Korea | Pyongyang | 38.8699 | 125.8264 | news music | MP3 128k rb:2d8ae9e8-d207-44fe-8a35-196388626837
+Pyongyang Radio FM | https://listen7.myradio24.com/69366 | North Korea | Pyongyang | 38.8699 | 125.8264 | news music | MP3 128k rb:2d8ae9e8-d207-44fe-8a35-196388626837
 1.FM - Deep Techno & Deep House | http://strm112.1.fm/deeptech_mobile_mp3 | Switzerland | Zürich | 47.1956 | 8.5250 | deep house, techno | MP3 256k rb:0ac7f5db-6f86-428f-8bb2-66ecce89ad1a
 JOE | https://icecast-qmusicbe-cdp.triple-it.nl/joe.mp3 | Belgium | Brussels | 50.8333 | 4.3300 | oldies | MP3 128k rb:529b71b3-ac05-426c-bd8c-6ae981713900
 Sveriges Radio - P3 | https://live1.sr.se/p3-mp3-96 | Sweden | Stockholm | 59.3240 | 18.0711 |  | MP3 148k rb:e4f6d392-f704-4cf0-8d26-9c931cebeaf6
@@ -231,7 +231,7 @@ Bremen Eins | https://icecast.radiobremen.de/rb/bremeneins/live/mp3/128/stream.m
 Technolovers DEEP HOUSE | https://stream.technolovers.fm/deep-house?ref=radiobrowser | Germany | Gießen | 50.6843 | 8.6133 | deep house, electro house | MP3 192k rb:cc0fdbe3-a2fb-4f0a-b67d-b47acd6354c7
 Virgin Radio Switzerland | https://stream.streambase.ch/vrock/mp3-192/direct/ | Switzerland | Zürich | 47.4184 | 8.5552 |  | MP3 ?k rb:c1d4b62b-cb16-43ca-ae3a-41c2eb31b6e7
 ORF Radio Oberösterreich HQ | https://orf-live.ors-shoutcast.at/ooe-q2a | Austria | Linz | 48.2981 | 14.3004 | orf | MP3 192k rb:ed03bcf5-86d2-45f7-848d-90d67f89e001
-Pyongyang FM Radio | http://myradio24.org/69366 | Democratic Peoples Republic Of Korea | Pyongyang | 39.0558 | 125.7693 | folk music | MP3 128k rb:7471224a-fae1-4324-a912-6585db34fd7b
+Pyongyang FM Radio | http://myradio24.org/69366 | North Korea | Pyongyang | 39.0558 | 125.7693 | folk music | MP3 128k rb:7471224a-fae1-4324-a912-6585db34fd7b
 630 CHED | https://corus.leanstream.co/CHEDAM-MP3 | Canada | Edmonton | 53.3980 | -113.3986 | hockey, news | MP3 128k rb:0b4b5555-2525-4c1d-9854-51fa9e6e95a5
 Cadena SER Sevilla | https://playerservices.streamtheworld.com/api/livestream-redirect/SER_SEVILLA.mp3 | Spain | Sevilla | 37.3884 | -5.9950 | local news, news | MP3 128k rb:01dd57ed-db38-4b33-bd4e-7a5ee8bcfe50
 Radio Gachsaran | https://radio.gachsaran.org/gach | Iran | Gachsaran | 30.1451 | 53.6128 |  | MP3 ?k rb:cf10fd7a-1d28-4fa2-b5dd-630c4781e1c8
@@ -615,7 +615,7 @@ Mezkla FM - 104.7 FM - XHPTLA-FM - San Andrés Tuxtla, Veracruz | http://198.7.5
 Afrobeats Jazz Radio | https://radio.nitro-server.uk/listen/frobeatsazzadio/radio.mp3 | United States | Durham | 35.9732 | -78.9117 | african, afrobeats | MP3 128k rb:8782cfd5-d363-41b4-83ad-5abc673fea35
 105.4 Cascais - O Rock da Linha | https://play.radioregional.pt:8220/stream/2/;;/stream.mp3 | Portugal | Amadora | 38.7340 | -9.3957 | rock | MP3 256k rb:7b6c8b15-4fa1-4a11-a737-d34a8b428151
 8Radio | https://stream.rcast.net/66127 | Ireland | Dublin | 53.3441 | -6.2670 | alternative, indie rock | MP3 320k rb:6650bb57-12aa-41d3-8ae4-ed5dcf0909cd
-Kreolkoneksyon Radio | https://listen.radioking.com/radio/511600/stream/569401 | Reunion | Le Tampon | -21.1594 | 55.5400 | 974, créole | MP3 128k rb:c0dccbae-c3c0-4d19-b82c-d6803c4cc045
+Kreolkoneksyon Radio | https://listen.radioking.com/radio/511600/stream/569401 | Réunion | Le Tampon | -21.1594 | 55.5400 | 974, créole | MP3 128k rb:c0dccbae-c3c0-4d19-b82c-d6803c4cc045
 RADIO BI 88.7 (Aguascalientes) - 88.7 FM - XHBI-FM - Radiogrupo - Aguascalientes, Aguascalientes | http://201.159.48.107:2860/ | Mexico | Aguascalientes | 21.8831 | -102.2928 | 88.7 fm, aguascalientes | MP3 ?k rb:6ce9a088-488d-4e95-b3d8-1255a680d785
 SR1 | https://liveradio.sr.de/sr/sr1/mp3/128/stream.mp3 | Germany | Saarbrücken | 49.2370 | 6.9763 |  | MP3 128k rb:d1edcf5b-d7e5-4ea7-9b3b-5913c2ecf9f6
 Radio Nervión | https://gruponervion.streaming-pro.com:6131/ | Spain | Bilbao | 43.2574 | -2.9335 | bilbao, música y noticias | MP3 ?k rb:ac31acc8-4acc-488d-851c-19db501e8233
@@ -625,7 +625,7 @@ Classic NL | https://classic.nl/streams/?s=main | Netherlands | Utrecht | 52.149
 Relax & Meditation | https://mml1.prostream.se/listen/relax_meditation/radio.mp3 | Sweden | Stockholm | 59.3293 | 18.0686 | ambient, meditation | MP3 ?k rb:2808c734-6166-4cda-9bbd-d4e05c0c4c32
 SomaFM Beat Blender (128k MP3) | https://ice2.somafm.com/beatblender-128-mp3 | United States | Stockton | 37.8098 | -121.2863 | chillout, deep house | MP3 128k rb:960eb232-0601-11e8-ae97-52543be04c81
 StarFM Berlin | https://stream.starfm.de/berlin/mp3-192/iradio | Germany | Berlin | 52.5075 | 13.4033 | classic rock, rock | MP3 ?k rb:0fe59833-2563-4eee-b405-ff0caa44a76e
-Falklands Radio 530 Stanley | https://streaming.broadcastradio.com:8332/flklnd | Falkland Islands Malvinas | Stanley | -51.7216 | -57.8101 | bbc news, local news weather | MP3 ?k rb:97887f52-540f-409e-a625-967e4698d829
+Falklands Radio 530 Stanley | https://streaming.broadcastradio.com:8332/flklnd | Falkland Islands (Malvinas) | Stanley | -51.7216 | -57.8101 | bbc news, local news weather | MP3 ?k rb:97887f52-540f-409e-a625-967e4698d829
 hr3 Nordhessen | https://dispatcher.rndfnk.com/hr/hr3/nordhessen/high | Germany | Kassel | 51.3151 | 9.4939 | pop | MP3 128k rb:3b48fe80-1dc7-43f6-8dd0-79c59aca3a45
 Radio Express FM | https://expressfm.ice.infomaniak.ch/expressfm-64.mp3 | Tunisia | Tunis | 36.8451 | 10.1836 | business news, economic news | MP3 64k rb:6787cf45-924e-4cac-84e1-7f6675712ae3
 Andrew Haug Metal Radio | http://streamer.radio.co/s6a349b3a2/listen | Australia |  | -28.4101 | 134.1860 |  | MP3 192k rb:8cc275fb-f527-4cff-9539-58da50df8782
@@ -674,7 +674,7 @@ Tizi Ouzou تيزي وزو | https://webradio2.tda.dz:8001/TiziOuzou_64K.mp3 | A
 Tlemcen تلمسان | https://webradio1.tda.dz:8001/Tlemcen_64K.mp3 | Algeria | Tlemcen | 34.8815 | -1.3170 | local, music | MP3 64k rb:279b39aa-6e80-4e2a-bb3f-f68f8cf9b6c8
 VOX FM Polska | https://ic2.smcdn.pl/3990-1.mp3 | Poland | Warsaw | 52.2407 | 21.0296 |  | MP3 128k rb:7a2f5726-23ff-4cce-a3ab-14e64bbce8ce
 021 caffe | https://centova.dukahosting.com/proxy/021kafe/stream | Serbia | Novi Sad | 45.2543 | 19.8429 |  | MP3 128k rb:5ac13e6f-3d5b-4312-ab5e-3ec6c1149824
-Hit FM Réunion | https://hitfm.ice.infomaniak.ch/hitfm-192.mp3 | Reunion | Saint-Denis | -20.8815 | 55.4484 | créole, réunion | MP3 160k rb:b0f323ea-4fce-42f3-85cb-942fd8f728df
+Hit FM Réunion | https://hitfm.ice.infomaniak.ch/hitfm-192.mp3 | Réunion | Saint-Denis | -20.8815 | 55.4484 | créole, réunion | MP3 160k rb:b0f323ea-4fce-42f3-85cb-942fd8f728df
 Megapolis Samara | https://online.radio-megapolis.ru/megapolis_mp3 | Russia | Samara | 53.1781 | 50.1965 |  | MP3 128k rb:6c6acd72-dee7-4439-809d-65066e124e5d
 - 0 N - Country on Radio | https://0n-country.radionetz.de/0n-country.mp3 | Germany | Hof | 50.3115 | 11.9230 | country, pop | MP3 128k rb:5dd6437a-3a93-11e9-9b4e-52543be04c81
 Rádio TMC 100.1 FM | https://24373.live.streamtheworld.com/RT_SP.mp3?dist=RadiosComBr-TMC&1771879327541 | Brazil | Porto Feliz | -23.0845 | -47.5818 | debates e entrevistas, esportes | MP3 128k rb:4912dab1-896c-41af-bf00-99ccafbd8b80
@@ -705,7 +705,7 @@ Radio Swiss Jazz | http://stream.srg-ssr.ch/m/rsj/mp3_128 | Switzerland | Basel 
 Generation Dance Radio | http://generationdance.lu/radio/8030/hd | Luxembourg | Luxembourg | 49.5096 | 5.9416 | dance, dj | MP3 192k rb:0f902505-76c7-489b-8ddc-03b05b5867ae
 SunFM | https://radio.lotustechnologieslk.net:2020/stream/sunfmgarden | Sri Lanka | Colombo | 6.9362 | 79.8738 |  | MP3 128k rb:7ca1623c-636b-4633-b794-ed0a78be7bce
 牽手之聲網路台 | http://us3.internet-radio.com:8232/stream | Taiwan | Taipei | 25.1131 | 121.5561 | internet radio | MP3 192k rb:c18cd9da-3469-4ded-9efe-04aa7d9f2523
-Scorch Radio 101.1FM | https://stream.velalabs.co/scorch | Trinidad And Tobago | Port of Spain | 10.6679 | -61.5290 | soca, various | MP3 128k rb:1c7b2753-6600-491c-9534-00ccc43d3471
+Scorch Radio 101.1FM | https://stream.velalabs.co/scorch | Trinidad and Tobago | Port of Spain | 10.6679 | -61.5290 | soca, various | MP3 128k rb:1c7b2753-6600-491c-9534-00ccc43d3471
 Maretimo Chill Radio | https://s35.derstream.net/chillradio.mp3? | Germany | Bad Salzungen | 50.8365 | 10.1074 | chill out | MP3 128k rb:7c57e87b-a5e2-410b-9055-922d9df50a20
 Radio Misk | https://live.misk.art/stream | Tunisia | Tunis | 36.8423 | 10.2086 |  | MP3 192k rb:89a65395-9af4-4c9d-9300-d765029785e8
 Bhaktiworld Media Shiva | http://hot.out.airtime.pro:8000/hot_a?_ga=2.158331450.1016847427.1656651399-%20396439986.1656651399 | India | Delhi | 28.6214 | 77.2148 |  | MP3 48k rb:ac970874-8d3b-46f6-8dee-b735a386caa6 (position: the capital; Radio Browser's coordinates were outside the country)
@@ -914,7 +914,7 @@ dinamo.fm legacy | http://channels.dinamo.fm/legacy-mp3 | Türkiye | Istanbul | 
 LRA1 Radio Nacional Argentina | https://sa.mp3.icecast.magma.edge-access.net/sc_rad1 | Argentina | Buenos Aires | -34.6017 | -58.3766 | argentina, buenos aires | MP3 75k rb:3934d9f0-7694-4896-bf11-fb19395c7c49
 Fun Radio Chill | https://stream.funradio.sk:8000/chill128.mp3 | Slovakia | Bratislava | 48.1545 | 17.1074 | chill, chillout | MP3 128k rb:81b88161-c3f7-4958-8165-7d408d7689db
 Mila ميلة | https://webradio3.tda.dz:8001/Mila_64K.mp3 | Algeria | Mila | 36.4516 | 6.2644 | local, music | MP3 64k rb:4e1a00c4-dfb8-4183-8fd1-813b7d0df94f
-SUN FM 97.8 102 94.1 | https://listen.radioking.com/radio/669814/stream/733864 | Reunion | Saint-Pierre | -21.3422 | 55.4811 | 974, créole | MP3 128k rb:cbf511c1-629b-4059-ac84-bb6cdf95e35f
+SUN FM 97.8 102 94.1 | https://listen.radioking.com/radio/669814/stream/733864 | Réunion | Saint-Pierre | -21.3422 | 55.4811 | 974, créole | MP3 128k rb:cbf511c1-629b-4059-ac84-bb6cdf95e35f
 Best FM - Nyíregyháza | https://icast.connectmedia.hu/5115/live.mp3 | Hungary | Nyíregyháza | 47.9518 | 21.7203 | local news, top hits | MP3 ?k rb:3c94be67-ad12-49d3-900a-59d06c9420e2
 * KARNEVAL Fasching, Fastnacht, Alaaf, Helau, Jeck, Jeckenparty, Karnevalsparty, Schunkeln… | https://karneval-high.rautemusik.fm/stream.mp3?ref=rb26 | Germany | Köln | 50.9370 | 6.9572 | alaaf, carnival | MP3 192k rb:4ab3731b-5fe5-4161-ad85-1f4fa4ed9c0b
 2000staFM | https://s3.unlimitedradiohosting.com/stream/two-thousand-on-fm | Greece | Corfu | 39.6234 | 19.9252 | 80s, 90s | MP3 192k rb:77f50e29-3910-4fe4-9ff4-a9564cce410d
@@ -1011,7 +1011,7 @@ ProgressiveUA | http://92.5.38.24:8000/radio.mp3 | Ukraine | Kyiv | 50.4547 | 30
 RPR1. Mainz | https://stream.rpr1.de/mainz/mp3-128/radiobrowser | Germany | Mannheim | 49.4782 | 8.4222 | 80er, 90er | MP3 ?k rb:98066fcc-5565-4f60-bc83-095bb9d3e2b2
 - 0 N - Blues on Radio | https://0n-blues.radionetz.de/0n-blues.mp3 | Germany | Hof | 50.3115 | 11.9230 | blues, r&b | MP3 128k rb:7e96f2c6-4012-4a70-bc2b-b27c95541bbb
 Glow 99.1 FM Akure | https://stream-176.zeno.fm/mwam2yirv1pvv | Nigeria | Akure | 7.2415 | 5.1980 | entertainment, music | MP3 128k rb:94cae4d4-7934-41a6-a2eb-14d8282ca9f0
-Africa Radio Abidjan | https://africaradio.ice.infomaniak.ch/abidjan128.mp3 | Coted Ivoire | Abidjan | 5.3199 | -4.0203 | african, news | MP3 96k rb:0d7c9963-2239-4384-8061-d2da2516bb68
+Africa Radio Abidjan | https://africaradio.ice.infomaniak.ch/abidjan128.mp3 | Côte d'Ivoire | Abidjan | 5.3199 | -4.0203 | african, news | MP3 96k rb:0d7c9963-2239-4384-8061-d2da2516bb68
 Радио Орфей (Radio Orpheus) | https://orfeyfm.hostingradio.ru:8034/orfeyfm192.mp3 | Russia | Moscow | 55.7271 | 37.6171 | classical, cultural | MP3 ?k rb:98ef07aa-a7b4-4161-813d-c9fdf48b97b4
 Rádió Comedy | https://a7.asurahosting.com/listen/radio_comedy/radio.mp3 | Hungary | Budapest | 47.4727 | 19.0608 | comedy, comedy radio | MP3 128k rb:ec318e57-0210-4676-85ff-5f662a49b794
 0nlineradio 80s | https://stream.0nlineradio.com/80s?ref=radiobrowser | Germany | Dillenburg | 50.7365 | 8.2617 | 1980s, 80er | MP3 192k rb:c87c50c6-4068-4270-a83a-80b91d43212d
@@ -1125,7 +1125,7 @@ LUPE 560 (Manzanillo) - 560 AM - XEMZA-AM - Grupo Radiofónico ZER - Manzanillo,
 Radiorama 1340 Frecuencia Deportiva (Guadalajara) - 1340 AM - XEDKT-AM - Radiorama de Occidente… | https://stream.zeno.fm/r1540b8e408uv | Mexico | Zapopan | 20.6757 | -103.3412 | 1340 am, am | MP3 56k rb:76d877f9-f259-4bd3-b9c1-eb14e2359fdc
 Punk Classics | https://mml2.prostream.se/listen/punk_classics/radio.mp3 | Sweden | Stockholm | 59.3293 | 18.0686 | classic punk, hardcore | MP3 ?k rb:9d1b673a-7a6b-4e0a-82b6-e0edfabfcb28
 Technolovers DRUM N BASS | https://stream.technolovers.fm/drummnbass?ref=radiobrowser | Germany | Wilnsdorf | 50.6843 | 7.9102 | bass, drum & bass | MP3 192k rb:cbcff885-49bb-4db1-8b78-7060e70ff06d
-Life radio Côte d’Ivoire | https://cast4.asurahosting.com/proxy/life/stream | Coted Ivoire | Abidjan | 5.3174 | -4.0292 | african pop, afropop | MP3 320k rb:739f485a-e8a2-4fcc-9fad-65ab509125cf
+Life radio Côte d’Ivoire | https://cast4.asurahosting.com/proxy/life/stream | Côte d'Ivoire | Abidjan | 5.3174 | -4.0292 | african pop, afropop | MP3 320k rb:739f485a-e8a2-4fcc-9fad-65ab509125cf
 Fantasy Radio - Italo Disco | https://italo.live-streams.nl/fantasy | Netherlands | The Hague | 51.9925 | 4.2076 | 80s, disco | MP3 256k rb:0a2f74d3-2e70-47bc-9aab-564b3bd35dba
 Radio 100komma7 | https://stream.100komma7.lu/100komma7/live/mp3/128/stream.mp3 | Luxembourg | Luxembourg | 49.6221 | 6.1521 |  | MP3 128k rb:80f07344-504e-48dd-8775-ab60c4a82068
 Громадське радіо | http://5.9.8.20:8000/stream | Ukraine | Kyiv | 50.4372 | 30.5431 |  | MP3 192k rb:2925144c-f91a-47ee-b2e8-3a11c486d47b
@@ -1171,7 +1171,7 @@ AM750 | https://playerservices.streamtheworld.com/api/livestream-redirect/AM750.
 NOAA Weather Radio KHB60 Seattle | https://wxradio.bobc.io/stream/KHB60 | United States | Seattle | 47.6248 | -122.5209 | weather radio | MP3 32k rb:16e2ffc0-ab42-4007-906a-7514607a4cc6
 Radio Audio | https://stream.zeno.fm/fvrx47wpg0quv | Nepal | Kathmandu | 27.6959 | 85.3313 | entertainment, music | MP3 128k rb:5638e14e-6971-4b21-9626-6a9404ed7b56
 - 0 N - Klassik on Radio | https://0n-klassik.radionetz.de/0n-klassik.mp3 | Germany | Hof | 50.3115 | 11.9230 | classical, klassik | MP3 128k rb:f30d3fbb-7899-456c-8d88-37de8f7c2eb7
-Réunion la 1ère (La1er) | https://reunion.ice.infomaniak.ch/reunion-128.mp3 | Reunion | Le Tampon | -21.1313 | 55.5066 | local news | MP3 128k rb:d60897d5-ceae-41f2-93e9-77ed010de01e
+Réunion la 1ère (La1er) | https://reunion.ice.infomaniak.ch/reunion-128.mp3 | Réunion | Le Tampon | -21.1313 | 55.5066 | local news | MP3 128k rb:d60897d5-ceae-41f2-93e9-77ed010de01e
 - 1 A - Weihnachten von 1A Radio | https://1a-weihnachten.radionetz.de/1a-weihnachten.mp3 | Germany | Hof | 50.3115 | 11.9230 | christliche musik, discofox | MP3 128k rb:2d63a059-f188-11e8-a471-52543be04c81
 Radio Sanskrit Bharati | https://stream.zeno.fm/c0adewsyw8quv | India | Nashik | 20.0104 | 73.7895 |  | MP3 128k rb:a7312cf9-ed24-467b-8214-999d7c7e9910
 Iceradio Germany | https://www.iceradio.net/listen | Germany | Münster | 51.9263 | 7.3595 | electro industrial darkwave eb | MP3 192k rb:57b8f306-8a9e-4743-8969-40f5d8e50713
@@ -1230,7 +1230,7 @@ Radio Kerry | https://27743.live.streamtheworld.com/RADIO_KERRY_SC | Ireland | T
 AnimeRadio.GAL | https://stream.animeradio.gal/listen/animeradio.gal/radio.mp3 | Spain | Lalín | 42.6615 | -8.1111 | japanese anime soundtracks gam | MP3 192k rb:de4c93b8-89b9-4269-a31d-94a5dbe71457
 Gevaş Sesi Radyosu | https://live.radyositesihazir.com:8056/stream | Türkiye | Gevaş | 38.2960 | 43.1100 |  | MP3 128k rb:05780f0f-6fbd-480c-916f-4133c7292273
 XY 90.5 FM - Tegucigalpa, Honduras | http://ice42.securenetsystems.net/XY905 | Honduras | Tegucigalpa | 14.1069 | -87.2037 | 90.5 fm, américa | MP3 64k rb:25554e01-23c1-4956-b414-71f4ef375353
-Kalman Radio | http://188.40.62.20:8004/stream | Bosnia And Herzegovina | Sarajevo | 43.8448 | 18.3819 | bih, bosna | MP3 128k rb:dae342d7-42ae-43bb-90ff-43450af4523f
+Kalman Radio | http://188.40.62.20:8004/stream | Bosnia and Herzegovina | Sarajevo | 43.8448 | 18.3819 | bih, bosna | MP3 128k rb:dae342d7-42ae-43bb-90ff-43450af4523f
 RADIO SSESE 101.9 FM KALANGALA | https://stream.zeno.fm/bphnslpg8p1uv | Uganda | Kalangala | -0.3834 | 32.2644 |  | MP3 128k rb:bd6575e4-5064-456a-b833-d7af16c2278a
 LA RANCHERITA DEL AIRE 580 (Piedras Negras) - 580 AM - XELRDA-AM - Piedras Negras, Coahuila | https://enlinea-r1.rancherita.com.mx/listen/rancherita_del_aire/radio.mp3 | Mexico | Piedras Negras | 28.7059 | -100.5182 | 103.7 fm, 580 am | MP3 96k rb:0a6649bc-239a-4cc5-94f3-e4b73d0128f0
 Radio Yeraz | http://149.255.60.194:8008/stream | Syria | Aleppo | 36.1992 | 37.1630 | armenian | MP3 128k rb:c5e512cd-66d6-4ff9-b0be-99defe2017f7
@@ -1351,7 +1351,7 @@ Radio DEEA -Onești | https://radiocdn.nxthost.com/radio-deea | Romania | Târgu
 92.5 Fox News | https://29324.live.streamtheworld.com/WFSXFM.mp3 | United States | Bonita Springs | 26.3333 | -81.7999 |  | MP3 64k rb:122485ac-fab2-4d62-aa1d-12027b4ab1f0
 Planet Music Mar del PLata 101.1 | https://strcdn.klm99.com:10991/planetmdp | Argentina | Mar del Plata | -38.0126 | -57.5533 | music, talk | MP3 128k rb:c3484fcd-50fd-47a0-8bf6-406ac4c2f669
 Radio Couleur Sud | http://ecmanager4.pro-fhi.net:2210/stream | France | Saint-Maximin-la-Sainte-Baume | 43.4149 | 6.0826 | généraliste, provence | MP3 320k rb:3edfee14-5073-49c4-ae8a-4db3b3681ea6
-Afrobeat international | https://listen.radioking.com/radio/397789/stream/449770 | Coted Ivoire | Abidjan | 5.3185 | -4.0196 | afrobeat | MP3 128k rb:1a29a057-1127-4906-b93e-dd2a7bdb57bf
+Afrobeat international | https://listen.radioking.com/radio/397789/stream/449770 | Côte d'Ivoire | Abidjan | 5.3185 | -4.0196 | afrobeat | MP3 128k rb:1a29a057-1127-4906-b93e-dd2a7bdb57bf
 Жаңа Rock | https://live.zhanafm.kz:8443/zhanarock | Kazakhstan | Karagandy | 49.8585 | 73.1003 | alternative rock, classic rock | MP3 128k rb:6e18d0d4-d3f4-436e-b7df-efb27105d92e
 Technolovers TRANCE | https://stream.technolovers.fm/trance?ref=radiobrowser | Germany | Fulda | 50.6738 | 9.6094 | melodic trance, progressive trance | MP3 192k rb:57a27605-e80a-499c-b1a2-aca15a4ce92e
 Radio Duisburg | https://stream.lokalradio.nrw/444zbw3 | Germany | Essen | 51.4387 | 6.7549 | lokalradio | MP3 128k rb:7c5a80b4-750e-43a7-a165-926ee5a74336
@@ -1374,9 +1374,9 @@ YOU FM (mp3/high) | https://dispatcher.rndfnk.com/hr/youfm/live/mp3/high | Germa
 FG Chic | http://radiofg.impek.com/fgc.mp3 | France | Paris | 48.8574 | 2.3404 |  | MP3 ?k rb:9f8179b0-08de-4a8e-8272-e8a70e196053
 MHT Radio Petrich | https://mht.hopto.org:8444/stream/1 | Bulgaria | Petrich | 41.3993 | 23.1990 |  | MP3 256k rb:dc699a1f-9d20-4993-b42d-70d28e444a87
 Radio Globo Solo le migliori | https://globo.newradio.it/globorm64 | Italy | Rome | 41.8809 | 12.4942 | capital, lazio | MP3 128k rb:1a79e996-8263-4e65-9d39-6e0e38dc6df4
-RSG Sarajevo | https://stream.rsgmedia.ba/listen/radio_stari_grad/radio.mp3 | Bosnia And Herzegovina | Sarajevo | 43.8513 | 18.4093 |  | MP3 192k rb:407e5834-b84d-4e28-914e-39fad39555e2
+RSG Sarajevo | https://stream.rsgmedia.ba/listen/radio_stari_grad/radio.mp3 | Bosnia and Herzegovina | Sarajevo | 43.8513 | 18.4093 |  | MP3 192k rb:407e5834-b84d-4e28-914e-39fad39555e2
 Power Club | https://wr06-ice.stream.khz.se/wr06_mp3 | Sweden | Stockholm | 59.3228 | 18.0639 | club, i like radio | MP3 128k rb:4b089827-c6e2-44d7-8689-00c47c9d8650
-Radio DAŠ | http://158.69.119.6:8095/;&type=mp3 | Bosnia And Herzegovina | Bijeljina | 44.7610 | 19.2106 | folk | MP3 128k rb:c64a7302-08db-4ad6-9b85-e379ee65ea77
+Radio DAŠ | http://158.69.119.6:8095/;&type=mp3 | Bosnia and Herzegovina | Bijeljina | 44.7610 | 19.2106 | folk | MP3 128k rb:c64a7302-08db-4ad6-9b85-e379ee65ea77
 TimiBanat -Populară | https://streaming12.elitecomunicacion.es:8096/stream3 | Romania | Timişoara | 45.7579 | 21.2290 | petrecere, populară | MP3 224k rb:e6784de4-a19a-4883-9f1e-3d3259fc726b
 WDR Sportschau - 1. Fussball Bundesliga-Konferenz LIVE | http://wdr-sportschau-liga1konferenz.icecastssl.wdr.de/wdr/sportschau/liga1konferenz/mp3/high | Germany | Köln | 50.9337 | 6.9664 |  | MP3 128k rb:5196db10-68b4-42b5-bbc5-ed58794abb12
 Minimal Mix Radio | http://orion.shoutca.st:8750/ | Poland | Warsaw | 52.2022 | 21.0459 | dance, dub | MP3 320k rb:4732081d-1bb0-472d-8e1e-6c78cf7abf2c
@@ -1455,10 +1455,10 @@ Radio Kreiz Breizh | https://stream.radios.bzh/listen/rkb/radio.mp3 | France | C
 Romantic Radio | https://radio-romantic.ro/stream | Romania | Bucharest | 44.4268 | 26.1024 | golden oldies, music | MP3 ?k rb:849f0b1c-3f34-4005-9114-ecabb8c46503
 yStream | https://ystream.live/ystream-mp3 | Israel | Tel Aviv | 32.0853 | 34.7818 | adult contemporary, ai radio | MP3 128k rb:c0c35a84-b5f4-4783-b27e-ab348c3f7e42
 บ้านธัมมะ | https://radio10.plathong.net/7238/;stream.mp3 | Thailand | Bangkok | 13.6962 | 100.4863 | มูลนิธิศึกษาและเผยแพร่พระพุทธศ | MP3 64k rb:b6bfa020-8770-40d5-b295-ff93368cc02f
-Esoterica Radio S2 | https://esoterica.servemp3.com:444/listen/darkbasshouse_cyberpunk_hybridtrap/radio.mp3 | Bosnia And Herzegovina | Koran | 43.6377 | 18.5190 | bass house, cyberpunk | MP3 192k rb:882b08a2-c753-4af0-91a7-4edad1cd683d
+Esoterica Radio S2 | https://esoterica.servemp3.com:444/listen/darkbasshouse_cyberpunk_hybridtrap/radio.mp3 | Bosnia and Herzegovina | Koran | 43.6377 | 18.5190 | bass house, cyberpunk | MP3 192k rb:882b08a2-c753-4af0-91a7-4edad1cd683d
 Deep House Radio (DHR) | https://listen.adtonos.com/deep-house-radio-dhr-4 | Ireland | Cork | 51.8863 | -8.6026 | chillout+lounge, deep house | MP3 ?k rb:03fb50d2-3cb7-4224-82c7-bc1909f34347
 Вера | http://77.39.8.49:8000/vera_air_96 | Russia | Stavropol | 45.0091 | 41.9009 | 96kbps, christian | MP3 96k rb:fd9794c2-c26b-4274-aa7a-ac4e56fcc21e
-Esoterica Radio S4 | https://esoterica.servemp3.com:444/listen/psytrance_progressivepsytrance/radio.mp3 | Bosnia And Herzegovina | Sarajevo | 43.7838 | 18.4355 | electronic dance music, progressive psytrance | MP3 192k rb:df1b947f-d1b1-4483-a078-402570a812f3
+Esoterica Radio S4 | https://esoterica.servemp3.com:444/listen/psytrance_progressivepsytrance/radio.mp3 | Bosnia and Herzegovina | Sarajevo | 43.7838 | 18.4355 | electronic dance music, progressive psytrance | MP3 192k rb:df1b947f-d1b1-4483-a078-402570a812f3
 VOX FM Radio Hits 96.5 (Villahermosa) - 96.5 FM - XHOP-FM - Grupo Radio Cañón - Villahermosa… | https://streaming.servicioswebmx.com/8298/stream | Mexico | Villahermosa | 17.9903 | -92.9372 | 2000s, 90s | MP3 128k rb:509f76d1-85ea-4297-b60d-85c9f6e8e1ef
 NMRadio | http://5.56.158.246:8000/stream | Denmark | Copenhagen | 55.7072 | 12.5299 | arabic, community radio | MP3 320k rb:30598973-ae93-4a50-ae65-aa7c939c1438
 Techno Live Sets | https://streamlive1.hearthis.at:8000/1329668.ogg?time=1783357004 | Colombia | Medellín | 6.2426 | -75.5800 | tech | MP3 256k rb:2f7feb09-8e0e-4aae-ad68-d1856aa1ba5d
@@ -1478,7 +1478,7 @@ Rockantenne Symphonic-Rock | http://stream.rockantenne.de/symphonic-rock/stream/
 dinamo.fm smog | http://channels.dinamo.fm/smog-mp3 | Türkiye | Istanbul | 41.0578 | 29.0105 | deep, dub | MP3 320k rb:ce11fd33-2cbf-11e8-91bf-52543be04c81
 RCV+ Radio Cabo Verde Jovem | https://a8.my-control-panel.com:8670/radio.mp3 | Cabo Verde | Praia | 14.9100 | -23.5157 |  | MP3 320k rb:d0cdbba0-70d5-45d8-ac11-ad9c8008a15d
 Instrumentals Forever | http://quincy.torontocast.com:1910/stream | Belgium | Brussels | 50.9036 | 4.1176 | big band, easy listening | MP3 128k rb:1f7dad2e-285c-4af4-b133-1b76a71cde8c
-Radiopostaja Mir - Međugorje | https://mirm.live/mir.mp3 | Bosnia And Herzegovina | Mostar | 43.1907 | 17.6776 | catholic, christian | MP3 192k rb:60607676-de23-44cd-8e05-aecbce5332c9
+Radiopostaja Mir - Međugorje | https://mirm.live/mir.mp3 | Bosnia and Herzegovina | Mostar | 43.1907 | 17.6776 | catholic, christian | MP3 192k rb:60607676-de23-44cd-8e05-aecbce5332c9
 Radio Los Compadres - 107.5 FM - XHSCBC-FM - Témoris, Chihuahua | https://stream.zeno.fm/25f0rqngk5zuv | Mexico | Témoris | 27.2769 | -108.2797 | 107.5 fm, américa | MP3 128k rb:cd890496-dd25-4481-9652-1ec170491e76
 Amazing Radio UK | http://stream.amazingradio.com:8000/stream.mp3?ngsw-bypass | England | Newcastle upon Tyne | 54.9662 | -1.6033 | electronica, hip hop | MP3 128k rb:c998524b-a7e5-4d7e-8b9f-cf9f7e6c0bb4 (country: England, where the position is)
 Stereo 91 (Nuevo Laredo) - 91.3 FM - XHNOE-FM - Nuevo Laredo, Tamaulipas | http://216.251.65.74:8000/; | Mexico | Nuevo Laredo | 27.4784 | -99.5191 | américa, entretenimiento | MP3 192k rb:858d3561-4317-438a-bb2e-577dff293b03
@@ -1606,7 +1606,7 @@ Absolut ROCK | https://edge59.live-sm.absolutradio.de/absolut-rock/stream/mp3 | 
 Hive FM | https://stream.aiir.com/oukspr99eiptv | England | Grantham | 52.9126 | -0.6409 |  | MP3 128k rb:71ec0b84-73e7-4c0d-bd50-17ce49d601e4 (country: England, where the position is)
 Cuba80s | https://pstnet12.shoutcastnet.com:10034/stream | United States | Miami | 25.7650 | -80.2215 |  | MP3 ?k rb:eaae1ef2-66d5-4536-92c8-dfb7a19f9f2b
 Soul Rhythms Radio UK | http://forwardmystream.com/soulrhythmsradiouk | England | London | 51.3976 | 0.0216 | funky house, pop | MP3 320k rb:d6f182de-5d6b-470b-8bee-3f6929feb2d0 (country: England, where the position is)
-Radio Jam | https://listen.radioking.com/radio/61201/stream/98566 | Coted Ivoire | Divo | 5.9322 | -5.3267 | african music, folk music | MP3 128k rb:5529f18f-c425-452d-901b-0ba5eae89335
+Radio Jam | https://listen.radioking.com/radio/61201/stream/98566 | Côte d'Ivoire | Divo | 5.9322 | -5.3267 | african music, folk music | MP3 128k rb:5529f18f-c425-452d-901b-0ba5eae89335
 Radio Mrągowo | https://stream.radiomragowo.pl/listen/radio_mragowo/radio.mp3?t=1773333890924 | Poland | Mrągowo | 53.8690 | 21.3042 | country, local programming | MP3 192k rb:9333ac4c-ec2d-40ae-b37c-96adb062beb8
 Petőfi Rádió | https://mr-stream.connectmedia.hu/4738/mr2.mp3 | Hungary | Budapest | 47.4901 | 19.0455 |  | MP3 192k rb:98730d4d-bb7d-4fab-9760-830ea6708d8d
 Laghouat الأغواط | https://webradio3.tda.dz:8001/Laghouat_64K.mp3 | Algeria | Laghouat | 33.8019 | 2.8575 | local, music | MP3 64k rb:f1442f37-22d0-4ae7-a43d-1bddc51437f5
@@ -1691,7 +1691,7 @@ Radio Rouge Italy | https://nl1.streamingpulse.com/ssl/radiorougeitaly | Italy |
 Omroep Zeeland Radio | https://d3isaxd2t6q8zm.cloudfront.net/icecast/omroepzeeland/omroepzeeland_radio | Netherlands | Middelburg | 51.4644 | 3.5985 | classics, folk | MP3 128k rb:a76886de-703d-4c64-91ba-75673bfc7235
 Radio Ultimito Mix | https://usa4.fastcast4u.com/proxy/rwrw1?mp=/1 | Ecuador | Manta | -0.9589 | -80.7072 | bachata, baladas | MP3 96k rb:ec1cc3a3-8e8f-4fe5-ac83-afbf61443605
 KISS FM EX YU | https://stream.zeno.fm/abn3hm6w768uv | Serbia | Belgrade | 44.7887 | 20.4977 | pop rock, rock | MP3 128k rb:c70d7f36-9776-40f3-ba11-be63d3fb9b8b
-102FM.RE | https://ecmanager4.pro-fhi.net/102fmoriginale | Reunion | Saint-Pierre | -21.3432 | 55.4763 | créole, réunion | MP3 320k rb:68f54a30-1a76-4c81-8b25-626d9166a91f
+102FM.RE | https://ecmanager4.pro-fhi.net/102fmoriginale | Réunion | Saint-Pierre | -21.3432 | 55.4763 | créole, réunion | MP3 320k rb:68f54a30-1a76-4c81-8b25-626d9166a91f
 Roberto Carlos Web | https://centova5.transmissaodigital.com:20032/stream | Brazil | Rio de Janeiro | -22.9175 | -43.2027 | mpb, romantica | MP3 128k rb:5a45dd8c-9269-435b-8395-fde4f5c80f63
 Radio Caroline | http://sc6.radiocaroline.net:8040/ | England | Chelmsford | 51.7251 | 0.6755 | classic rock | MP3 128k rb:a441243b-34f0-4c8d-ba56-64c5b250604b (country: England, where the position is)
 Exclusively U2 - HITS | https://streaming.exclusive.radio/er/u2hits/icecast.audio | United Arab Emirates | Sharjah | 25.3387 | 55.3005 | pop, rock | MP3 128k rb:4eb45619-b48d-4911-b1d5-4aa4e7749ddf
@@ -1939,7 +1939,7 @@ Ivan Honcharov | https://azuracast.reverbriff.com/listen/reverb_riff_radio/radio
 Forum 70's | http://forum70s.ice.infomaniak.ch/forum70s.mp3 | France | Orléans | 47.9193 | 1.8842 |  | MP3 128k rb:29a690fb-26dc-4485-9ef3-b6682ed6b878
 Hot Radio | https://stream1.hippynet.co.uk/stream/hotradio/dorset | England | Bournemouth | 50.7370 | -1.9505 | 00s, 2000s | MP3 160k rb:597d9f11-b953-4cae-8f8f-88ff846fe2e9 (country: England, where the position is)
 dealership radio | https://radio-server.dship.biz/listen/dealership_radio/radio.mp3 | United States | Eugene | 43.9976 | -123.1603 | comedy, dnb | MP3 256k rb:aa6e7d41-6549-4047-85e7-1dc36fd25090
-Archipel FM SPM (975) 103.3 | http://radioarchipelfm.ice.infomaniak.ch/radioarchipelfm-64.mp3?token=a73d3f78786d4e7faba5a9e35eaed5bb%2Fe5c8c5d1?retry=0 | Saint Pierre And Miquelon | Saint-Pierre | 46.7868 | -56.1730 | public radio | MP3 192k rb:01f9d7f0-9629-4b67-95e0-ab8af17569bf
+Archipel FM SPM (975) 103.3 | http://radioarchipelfm.ice.infomaniak.ch/radioarchipelfm-64.mp3?token=a73d3f78786d4e7faba5a9e35eaed5bb%2Fe5c8c5d1?retry=0 | Saint Pierre and Miquelon | Saint-Pierre | 46.7868 | -56.1730 | public radio | MP3 192k rb:01f9d7f0-9629-4b67-95e0-ab8af17569bf
 La jungla Radio | https://streaming12.elitecomunicacion.es:8626/stream?type=.mp3 | Spain | San Martín de Valdeiglesias | 40.4130 | -4.5008 | entretenimiento, musica | MP3 128k rb:b513bc26-93a5-453a-9877-725abcbc87da
 Schwany3 Echte Volksmusik | http://volksmusik.sp.radio.fm/stream | Germany | Straubing | 48.8434 | 12.6210 | volksmusik | MP3 320k rb:fb29f8a1-ec00-4cf7-a4f3-f292d9ec33e5
 KELK Radio Elko | https://us2.maindigitalstream.com/ssl/KELK | United States | Elko | 40.8842 | -115.7850 | adult contemporary | MP3 128k rb:1b87ddcd-8b3e-4c0b-b14b-85e3512b13d1
@@ -2268,7 +2268,7 @@ P11 Dance (MP3 192k) | https://p11.p4groupaudio.com/P11_MH | Norway | Lillehamme
 Radio Biedrzychowice | http://195.164.158.230:9070/stream | Poland | Bełchatów | 51.3992 | 19.1602 | electronic, metal | MP3 128k rb:c692ce46-4dfe-4d7b-867c-453fcfdb1281
 Plumtree Radio 87.9FM | https://das-edge93-live365-dal05.cdnstream.com/a74343 | United States | Portland | 45.3565 | -122.6071 | top 40 oldies 50's to the 90's | MP3 128k rb:d1740814-9a5b-49d4-942e-44301afc1e7a
 Rádio Roberto Carlos | https://stream.zeno.fm/erbpkq1cz55vv | Brazil | Rio de Janeiro | -22.9374 | -43.2060 | mpb, romantica | MP3 128k rb:66623675-5487-4432-a032-c4dc510b73b8
-Passion Tropical | https://listen.radioking.com/radio/7495/stream/16988 | Reunion | Le Tampon | -21.1437 | 55.5366 | créole, réunion | MP3 128k rb:60ae9d8f-546f-4ab3-ab4d-e8907cfeb0ea
+Passion Tropical | https://listen.radioking.com/radio/7495/stream/16988 | Réunion | Le Tampon | -21.1437 | 55.5366 | créole, réunion | MP3 128k rb:60ae9d8f-546f-4ab3-ab4d-e8907cfeb0ea
 LA UNIKA 105.7 (Ciudad Obregón) - 105.7 FM - XHOS-FM - Radio Grupo García de León - Ciudad… | https://streamingcwsradio30.com:7059/stream | Mexico | Ciudad Obregón | 27.4855 | -109.9348 | 105.7 fm, américa | MP3 128k rb:0137c0d3-26d0-4716-a5d2-565d2a3313be
 EXA FM 99.3 (Ciudad Obregón) - 99.3 FM - XHOX-FM - Radio Grupo García de León - Ciudad Obregón… | https://streamingcwsradio30.com:7056/ | Mexico | Ciudad Obregón | 27.4869 | -109.9359 | 99.3 fm, américa | MP3 96k rb:38260f75-5600-4131-ad1a-6b98cbb34428
 WSCL 89.5 FM Classical Delmarva | https://26443.live.streamtheworld.com/WESMFM.mp3 | United States | Salisbury | 38.3395 | -75.6013 | classical, community radio | MP3 128k rb:e1b23347-fc79-43d7-967f-26a4d9ae73c3
@@ -2319,12 +2319,12 @@ RADIO ACTIVA 92.5 cl | http://stream.zeno.fm/pvs6hqz3crtvv | Chile | Santiago | 
 RNZ National | http://radionz-ice.streamguys.com/national.mp3 | New Zealand | Wairau Valley | -41.4077 | 173.5840 |  | MP3 64k rb:5e3b25d8-5e08-488c-adb7-a83b5139ffc6
 Maxi France radio | https://stream.maxifrance.radio/stream | France | Clermont-Ferrand | 45.8043 | 3.0762 | chansons françaises, pop | MP3 128k rb:7c2bdd5a-81e4-49ec-9128-dd7d3a6e2db2
 Tequila România -Radio Dance | https://dance.radiotequila.ro/7000/stream | Romania | Bucharest | 44.4355 | 26.1025 | dance | MP3 128k rb:d03fe6ff-6d0c-45b8-bbe6-152c42fc70f6
-Waho | https://listen.radioking.com/radio/214300/stream/257431 | Reunion | Le Tampon | -21.1626 | 55.5606 | 974, créole | MP3 128k rb:ee90355d-bb22-4f49-b6dc-215e6d171a89
+Waho | https://listen.radioking.com/radio/214300/stream/257431 | Réunion | Le Tampon | -21.1626 | 55.5606 | 974, créole | MP3 128k rb:ee90355d-bb22-4f49-b6dc-215e6d171a89
 ALTAMIX 91.9 (Ciudad Altamirano) - 91.9 FM - XHSCBP-FM - Altamiradio Comunicaciones, A.C. - Ciudad… | http://sp2.servidorrprivado.com:9366/; | Mexico | Ciudad Altamirano | 18.3594 | -100.6697 | 91.9 fm, altamix | MP3 128k rb:2baf8271-2186-4258-a311-5e270526760f
 Relizane غليزان | https://webradio1.tda.dz:8001/Relizan_64K.mp3 | Algeria | Relizane | 35.7410 | 0.5542 | local, music | MP3 64k rb:91dd194f-1d05-40b1-8ae5-be24a727d551
 Radio Drniš 89,0 MHz | https://ec2s.crolive.com.hr:2415/stream | Croatia | Knin | 43.8633 | 16.1576 | various | MP3 256k rb:6d9529f1-cee1-4f62-a41a-00ecfb40d6ef
 Exaltación FM | https://exaltacionfm.net:8070/stream | Dominican Republic | San Pedro de Macorís | 18.4574 | -69.2959 | religioso católico | MP3 128k rb:77bfb337-829b-403b-a495-d962987eb6ad
-Sunlight FM | https://listen.radioking.com/radio/355933/stream/405250 | Reunion | Saint-Joseph | -21.3611 | 55.7693 | 974, créole | MP3 128k rb:a3cd2ea3-55dd-40b5-a6a6-6ac020511c6d
+Sunlight FM | https://listen.radioking.com/radio/355933/stream/405250 | Réunion | Saint-Joseph | -21.3611 | 55.7693 | 974, créole | MP3 128k rb:a3cd2ea3-55dd-40b5-a6a6-6ac020511c6d
 99.3 Amor Es (Zacatecas) - 99.3 FM - XHZAZ-FM - Grupo Radiofónico ZER - Zacatecas, Zacatecas | https://cast.zuperdns.net/8002/stream | Mexico | Guadalupe | 22.7758 | -102.5728 | 99.3 fm, amor es | MP3 64k rb:5e0cdfa2-fc1d-469b-9686-a99aa6466a1d
 AIR Bhuj | http://117.254.199.9:8081/source | India | Bhuj | 23.2473 | 69.6674 | air, bhuj | MP3 128k rb:3dff8e49-943c-4300-b1cc-f2111495cee0
 Dinámica 95.5 FM - Puerto Ordaz | https://acp2.lorini.net:41066/stream | Venezuela | Ciudad Guayana | 8.3130 | -62.7038 | music, news | MP3 128k rb:d5837eaf-27e1-4f7c-b6c1-dac35c7fe664
@@ -2382,7 +2382,7 @@ Radio Sai - Sai Gayathri Stream | http://stream.radiosai.net:8004/ | India | Yen
 Miraç Fm | https://anadolu.liderhost.com.tr:9416/stream | Türkiye | Esenyurt | 41.0300 | 28.4539 | islamic religion | MP3 128k rb:288483da-41bd-466a-8282-d3f5dcc4c2d0 (position: the nearest town; Radio Browser's was out at sea)
 3MBS - Melbourne, 103.5 MHz FM | https://playerservices.streamtheworld.com/api/livestream-redirect/3MBS.mp3 | Australia | Melbourne | -37.8025 | 145.0026 | classical | MP3 128k rb:5a64b928-5149-47fe-bebd-8ed5f09c43ac
 NRK P1 Sogn og Fjordane (Høy kvalitet MP3) | https://lyd.nrk.no/icecast/mp3/high/s0w7hwn47m/p1_dk7 | Norway | Førde | 61.4518 | 5.8534 |  | MP3 192k rb:f6719b19-c0d6-4b18-8d22-ca72dc40ecb6
-BurningSoca: | http://176.9.121.230:8000/soca | Trinidad And Tobago | Rio Claro | 10.3452 | -61.0236 |  | MP3 192k rb:3b76e46f-66e0-4694-9627-9ed8bdc9d25e
+BurningSoca: | http://176.9.121.230:8000/soca | Trinidad and Tobago | Rio Claro | 10.3452 | -61.0236 |  | MP3 192k rb:3b76e46f-66e0-4694-9627-9ed8bdc9d25e
 Super45.fm | https://s4.radio.co/s421105570/listen | Chile | Santiago | -33.4388 | -70.6415 | alternative / indie, experimental electronic music | MP3 192k rb:2b957d50-4a98-4f70-a9e4-5860ddb6dc68
 CANDELA 95.1 (Apatzingán) - 95.1 FM - XHAPM-FM - Cadena RASA - Apatzingán, Michoacán | https://stream-282.surfernetwork.com/kvdvkhbtvchvv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJrdmR2a2hidHZjaHZ2IiwiaG9zdCI6InN0cmVhbS0yODIuc3VyZmVybmV0d29yay5jb20iLCJ0bSI6ZmFsc2UsInJ0dGwiOjUsImp0aSI6ImRmTGxBUFdqU3FXOWRYRXlWMUpySFEiLCJpYXQiOjE3OTIyNDk2NTIsImV4cCI6MTc5MjI0OTcxMn0.isnv3FBCw8RfnXxR9hn5HwyyEYu7B9m9HL1I-BwnmKM | Mexico | Apatzingán | 19.0927 | -102.3539 | 95.1 fm, américa | MP3 96k rb:e736fbb5-f071-4a9e-aef3-fd9770456085
 Prog Palace Radio's The Armory | https://cheetah.streemlion.com/progpalace64 | Canada | Toronto | 43.6340 | -79.4150 | power metal, prog metal | MP3 320k rb:a236979e-d4e5-4b42-9321-99c617b9e65c
@@ -2533,7 +2533,7 @@ LOS40 100.5 (Delicias) - 100.5 FM - XHBZ-FM - Sigma Radio - Delicias, Chihuahua 
 - 1 A - Pop von 1A Radio | https://1a-pop.radionetz.de/1a-pop.mp3 | Germany | Hof | 50.3115 | 11.9230 | black, dance | MP3 128k rb:a94d996a-33c7-49b2-ac19-f475f8cdc75d
 Trigger.FM Info | https://info-hd-radio.triggerfm.de/ | Germany | Königs Wusterhausen | 52.3093 | 13.5791 |  | MP3 256k rb:249b9dc9-73b2-4f6f-9c2c-60b480a7f5dc
 Rádio Novíssima Fm | https://s03.taaqui.org:8918/stream | Brazil | Ribeirão das Neves | -19.7120 | -44.1779 | 90 e 2000, anos 80 | MP3 128k rb:519c1d4e-eed3-4c53-bb8c-60b39724f02d
-Radio Bosna | https://host2.streamafrica.net/listen/radio_bossna/radio.mp3 | Bosnia And Herzegovina | Zenica | 44.3547 | 17.9955 |  | MP3 320k rb:49552182-69ee-4692-a058-b2cd68b6f4bd
+Radio Bosna | https://host2.streamafrica.net/listen/radio_bossna/radio.mp3 | Bosnia and Herzegovina | Zenica | 44.3547 | 17.9955 |  | MP3 320k rb:49552182-69ee-4692-a058-b2cd68b6f4bd
 1050 LA GRAN D (Mexicali) - 1050 AM - XED-AM - Radio Cadena Enciso - Mexicali, Baja California | https://edge.mixlr.com/channel/lcezl | Mexico | Mexicali | 32.6445 | -115.4761 | 1050 am, am | MP3 ?k rb:4a02f37c-af0f-4567-8a84-2eb70a548f98
 delta radio At Home | https://streams.deltaradio.de/101/mp3-192/streams.deltaradio.de/ | Germany | Kiel | 54.3251 | 10.0832 |  | MP3 ?k rb:1b83375d-9b2b-4795-86f7-e0d83240be75
 LA MEJOR 540 (Los Mochis) - 540 AM - XEHS-AM - Grupo RSN - Los Mochis, Sinaloa | https://a6.asurahosting.com:7920/stream | Mexico | Los Mochis | 25.7946 | -108.9905 | 90.9 fm, aquí nomás | MP3 128k rb:cd3787aa-d1d6-44e5-98db-767bce9fe284
@@ -2645,7 +2645,7 @@ Absolute Chillout - Spain | http://edge4.peta.live365.net/b05055_128mp3 | Spain 
 Radio Mega Stelar - Cajamarca, Santa Cruz | https://sp.dattavolt.com:7080/; | Peru | Santa Cruz De Succhabamba | -6.6266 | -78.9432 |  | MP3 128k rb:20d71088-8f9d-48c5-98eb-90f758ccc7df
 Nemzeti Sportrádió | https://icast.connectmedia.hu/4657/mr11.mp3 | Hungary | Budapest | 47.4958 | 19.0376 | sports | MP3 192k rb:59d532c2-fddf-4f17-8a3d-50bf632ae553
 Heimatradio.nl | https://live.heimatradio.nl/stream | Netherlands | Nijmegen | 51.7727 | 5.9326 | various | MP3 192k rb:d51807e1-5299-4f37-bae7-617b55c463db
-Balkan Hip-Hop Radio | http://centova.dukahosting.com:2022/stream | Bosnia And Herzegovina | Banja Luka | 44.7788 | 17.2062 | balkan, banja luka | MP3 128k rb:ce2b6ae2-7650-461a-8324-a36a39631bd7
+Balkan Hip-Hop Radio | http://centova.dukahosting.com:2022/stream | Bosnia and Herzegovina | Banja Luka | 44.7788 | 17.2062 | balkan, banja luka | MP3 128k rb:ce2b6ae2-7650-461a-8324-a36a39631bd7
 EXA FM 98.5 (Tuxtla) - 98.5 FM - XHCQ-FM - Valanci Media Group - Tuxtla Gutiérrez, CHiapas | https://playerservices.streamtheworld.com/api/livestream-redirect/XHCQ.mp3 | Mexico | Tuxtla | 16.7563 | -93.1154 | 98.5 fm, américa | MP3 128k rb:42a7dab9-4af2-48c6-9a3e-788932c52639
 VOX: Radio Hits | https://streamingcwsradio30.com/8292/vox | Mexico | Mexico City | 19.4339 | -99.1340 | 760 am, am | MP3 160k rb:3aaa0b26-5620-4553-aaf8-f051113a847a
 KY 104.5 (MTY) - 104.5 FM - XHMF-FM - Grupo Audiorama Comunicaciones - Monterrey, Nuevo León | https://cdn1.onstream.audio/proxy/xhmf/stream | Mexico | Monterrey | 25.6822 | -100.3165 | 104.5 fm, américa | MP3 128k rb:80008f16-1184-4b8a-bd16-662366a928e5
@@ -2680,7 +2680,7 @@ SMOOTH JAZZ 24/7 UK | http://smoothjazz247.edge.audiocdn.com/11222_192.mp3 | Eng
 92.1 W Radio (Chetumal) - 92.1 FM - XHCCBQ-FM - Grupo Radio Cañón - Chetumal, Quintana Roo | https://streaming.servicioswebmx.com/8256/stream | Mexico | Chetumal | 18.5035 | -88.2957 | 92.1 fm, américa | MP3 192k rb:fa9cad04-cbb9-4600-a45e-642c5bde0cf2
 radio SAW-In The Mix | https://stream.radiosaw.de/saw-in-the-mix/mp3-192/radio-browser/ | Germany | Magdeburg | 52.1038 | 11.5925 | partymix | MP3 ?k rb:e3a7038e-5682-4579-be8a-0f58e99d95a1
 - 0 N - Schlager Kult on Radio | https://0n-schlagerkult.radionetz.de/0n-schlagerkult.mp3 | Germany | Hof | 50.3115 | 11.9230 | oldies, schlager | MP3 128k rb:23495167-bf9e-11e9-8502-52543be04c81
-RadioMajevica.com | https://live.radiomajevica.com:7520/live | Bosnia And Herzegovina | Tuzla | 44.5921 | 18.6839 | izvorna, narodna | MP3 96k rb:c0c8ab11-ee88-47f1-b1d1-448c79185c55
+RadioMajevica.com | https://live.radiomajevica.com:7520/live | Bosnia and Herzegovina | Tuzla | 44.5921 | 18.6839 | izvorna, narodna | MP3 96k rb:c0c8ab11-ee88-47f1-b1d1-448c79185c55
 CFCR Saskatoon Community Radio | https://onair.cfcr.ca/hifi.mp3 | Canada | Saskatoon | 52.1257 | -106.6637 | eclectic | MP3 320k rb:1ff85c5e-8139-4208-8773-02cf075b61ac
 mittendrin.pl | https://s1.slotex.pl:7592/;type=mp3 | Poland | Racibórz | 50.0831 | 18.2078 |  | MP3 128k rb:bd53f858-a760-485b-b276-0d86b196f589
 Token FM | https://tokenfm.fr/live.mp3 | France | Valence | 44.9334 | 4.8924 | ai, artificial intelligence | MP3 128k rb:1a359511-b5e4-4f12-8cda-49cc585ce905
@@ -2751,7 +2751,7 @@ MixPerfect Radio | https://mixperfectradio.nl:9443/stream | Netherlands | Rotter
 LA PRIMERA 101.7 (Ojinaga) - 101.7 FM - XHOG-FM - Grupo BM Radio - Ojinaga, Chihuahua | https://stream.zeno.fm/069xrm8ub84tv | Mexico | Ojinaga | 29.5456 | -104.4170 | 101.7 fm, américa | MP3 128k rb:d4508511-6486-45a2-9113-b6bb83271745
 Pro Balkan România -Brăila | https://radio.sonicpanel.ro/8102/stream | Romania | Galaţi | 45.2716 | 27.9743 | dance, manele | MP3 128k rb:651e880f-e7a1-40fc-8f53-33e9360a00df
 RFM Radio (NL) | http://77.165.92.45:8000/audio.mp3 | Netherlands | Utrecht | 52.0618 | 5.2267 | pop music | MP3 ?k rb:0a22bfe4-5fb9-4027-8160-721fb151afa8
-Radio Begov Han | https://stream-175.surfernetwork.com/qggihjl4mgcvv | Bosnia And Herzegovina | Zenica | 44.3540 | 17.9952 |  | MP3 128k rb:4c46ac71-1e02-488f-9b95-0aa8cb56bea1
+Radio Begov Han | https://stream-175.surfernetwork.com/qggihjl4mgcvv | Bosnia and Herzegovina | Zenica | 44.3540 | 17.9952 |  | MP3 128k rb:4c46ac71-1e02-488f-9b95-0aa8cb56bea1
 cat kawaii | https://stream.zeno.fm/bgblhk5vv5uuv | Mexico | Mexico City | 19.4272 | -99.1406 | variado | MP3 128k rb:aca452a6-5f9f-4221-8297-03e409816f17
 ARROBA FM 88.7 (GDL) - 88.7 FM - XHGDL-FM - Radiorama de Occidente - Guadalajara, Jalisco | https://stream.zeno.fm/es06s1g9d78uv | Mexico | Zapopan | 20.6743 | -103.3399 | 88.7 fm, @fm | MP3 128k rb:8e527ecc-5c7a-49e4-8213-9d44c6890177
 RT1 Rock | https://frontend.streamonkey.net/rt1-ch24/stream/mp3?aggregator=rt1_web&aw_0_1st.playerid=rt1_web&aw_0_1st.source=imsuden_web | Germany | Augsburg | 48.3662 | 10.8872 | rock | MP3 128k rb:47afb613-cb82-4708-9826-5ccb2cf958a6
@@ -2834,7 +2834,7 @@ FIESTA MEXICANA 102.9 (Celaya) - 102.9 FM - XHNC-FM - Radiorama Bajío - Celaya,
 1070 Exa FM (Ciudad del Carmen) - 1070 AM - XEIT-AM - Radiorama - Ciudad del Carmen, Campeche | https://ss1.audiorama.com.mx:6674/stream | Mexico | Ciudad del Carmen | 18.6535 | -91.8150 | 1070 am, 99.7 fm | MP3 128k rb:48f1172c-9446-4407-8628-383924252657
 ES RADIO LAS PALMAS 91.1 | http://uk1.streamingpulse.com:7039/stream | Spain | Las Palmas de Gran Canaria | 28.1303 | -15.4329 | variety | MP3 128k rb:5fdeaaf5-614f-454c-b654-58b1204df208
 Raaj FM | http://live.canstream.co.uk:8000/raajfm.mp3 | England | Birmingham | 52.5196 | -1.9976 | asian, asian pop | MP3 64k rb:4d31a6ea-a652-4862-9e9d-0d69c0f8f403 (country: England, where the position is)
-Krajiški Radio Dubica | https://stream1.srvnetplus.com:18039/ | Bosnia And Herzegovina | Mostar | 43.4264 | 17.9632 |  | MP3 128k rb:2a24228f-7084-4cc5-9f88-9e7449698a98
+Krajiški Radio Dubica | https://stream1.srvnetplus.com:18039/ | Bosnia and Herzegovina | Mostar | 43.4264 | 17.9632 |  | MP3 128k rb:2a24228f-7084-4cc5-9f88-9e7449698a98
 1Achterhoek | https://nlpo.stream.vip/achterhoek/mp3-192/nlpo.stream.vip/ | Netherlands | Winterswijk | 51.9855 | 6.5944 |  | MP3 ?k rb:98699a46-6e16-43b6-885f-8ab1bd8cb1aa
 Kiss FM | https://edge02.cdn.bitflip.ee:8888/KISS | Estonia | Tallinn | 59.4037 | 24.7314 |  | MP3 320k rb:af1616c5-56b9-49b0-b7c2-38dfb3c07a49
 Radio Raheem | https://radioraheem.out.airtime.pro/radioraheem_a | Italy | Milan | 45.4725 | 9.1737 | ambient, balearic | MP3 192k rb:a1c99f81-f8d1-4f6d-b9e3-714763a72b7d
@@ -3355,7 +3355,7 @@ FluxFM 60s 64k MP3 | https://fluxmusic.api.radiosphere.io/channels/60s/stream.mp
 90.1 Mas Que Radio (Aguascalientes) - 90.1 FM - XHPEFD-FM - Comunicación Integral para la Familia… | https://streaming.servicioswebmx.com:8014/stream | Mexico | Aguascalientes | 21.8819 | -102.2969 | 90.1 fm, aguascalientes | MP3 128k rb:b06202d8-1c27-4834-aec1-38c82256a938
 maresol web radio - Feijó | https://stream.zeno.fm/pxbrdor4opmvv | Brazil | Feijó | -8.1640 | -70.3538 |  | MP3 128k rb:494265b5-4c68-458d-9695-df3c5d5ea567
 radioscintillablog | https://dreamsiteradiocp3.com/proxy/radioscintilla?mp=/ | Italy | Vicenza | 45.7079 | 11.5648 |  | MP3 128k rb:cac86a82-bdd4-4408-9859-bc210d9f7f9e
-Radio Laktasi | https://radio.laktasiturizam.org/live | Bosnia And Herzegovina | Banja Luka | 44.9074 | 17.3008 |  | MP3 320k rb:306f08fb-7eed-45ad-9ff3-8dac5a05e5ab
+Radio Laktasi | https://radio.laktasiturizam.org/live | Bosnia and Herzegovina | Banja Luka | 44.9074 | 17.3008 |  | MP3 320k rb:306f08fb-7eed-45ad-9ff3-8dac5a05e5ab
 Free Radio Conselve | https://ice17.fluidstream.net/conselve.mp3 | Italy | Padua | 45.2313 | 11.8742 |  | MP3 ?k rb:0e9b718e-c78e-435d-9fe5-2afb95d8f927
 FUSIÓN 90.1 (Veracruz) - 90.1 FM - XHLL-FM - Grupo Pazos - Veracruz, Veracruz | https://sgaudio.centrocibernetico.com/fusion | Mexico | Veracruz | 19.1963 | -96.1357 | 90.1 fm, américa | MP3 48k rb:22e0516b-fcab-49e4-8346-882c7628840f
 Durisima Radio Online | http://stream.laut.fm/durisimaradio | Colombia | Santiago de Cali- Valle Del Cauca | 0.9722 | -73.6523 |  | MP3 128k rb:747ec584-7b02-43ac-a0af-c89dd7b46cd3
@@ -3494,7 +3494,7 @@ Souk Ahras سوق أهراس | https://webradio2.tda.dz:8001/SoukAhras_64K.mp3 |
 Cielos Abiertos 94.7 FM (Ciudad Valles) - 94.7 FM - Ciudad Valles, San Luis Potosí | https://s01.digitalserver.org/8100/stream | Mexico | Ciudad Valles | 21.9980 | -99.0107 |  | MP3 48k rb:c4d21eff-49f9-40f2-b1f5-5f4f4fef0782
 3Chords allez Ist Punk | http://stream.laut.fm/3chords | Germany | Düsseldorf | 51.2026 | 6.7731 | deutschrock, punk | MP3 128k rb:44088288-7ad1-44a7-8ec5-d8c210099c12
 EBS Radio | https://azura.ebsmedia.ro/listen/live/live128.mp3 | Romania | Cluj-Napoca | 46.7805 | 23.5959 | adult contemporary, top hits | MP3 128k rb:a8691211-8021-447b-8d1f-873fd1af4e96
-Radio Oxygène Réunion | https://ecmanager2.pro-fhi.net:1535/stream | Reunion | Saint-Benoît | -21.1287 | 55.7921 | 974, créole | MP3 320k rb:213dadb5-ebb4-4e5c-bf7d-0cdc2ce247c3
+Radio Oxygène Réunion | https://ecmanager2.pro-fhi.net:1535/stream | Réunion | Saint-Benoît | -21.1287 | 55.7921 | 974, créole | MP3 320k rb:213dadb5-ebb4-4e5c-bf7d-0cdc2ce247c3
 105FM | https://105fm.espiv.net/listen/105fm/stream.mp3 | Greece | Mytilene | 39.0998 | 26.5402 | antifa news, electronic | MP3 320k rb:39eb53ab-7e7c-4ed5-aa80-3999c2a8a1ed
 L.T.J.G.T. Radio | https://stream.zeno.fm/h7doige9reetv | Romania | Sânnicolau Mare | 46.1692 | 20.7533 |  | MP3 128k rb:3fe579b3-91ab-4434-be49-d57a14a30d75
 infrared.fm | https://carol.epichosts.co.uk:8232/live.mp3 | England | London | 51.5377 | -0.1397 | breaks, drum & bass | MP3 256k rb:9e830741-897c-410d-84de-f4eb2335b9bb (country: England, where the position is)
@@ -3509,7 +3509,7 @@ World Radio Network Russian (WRN) | http://shoutcast.wrn.org:8025/WRN-R | Englan
 Planet Music Pinamar 99.5 | https://strcdn.klm99.com:10984/planetpinamar | Argentina | Pinamar | -37.1128 | -56.8639 | talk. music | MP3 128k rb:a44b36e4-22eb-4261-b800-ec5b69d3b438
 Hasta que el Cuerpo Aguante Radio (Aguascalientes) - Online - Aguascalientes, AG | https://s01.digitalserver.org/8110/stream | Mexico | Aguascalientes | 21.8831 | -102.2942 | aguascalientes, bolero | MP3 64k rb:20a1b209-29b1-4d39-b2f3-178166eb2af6
 Deep Link Radio - Jazzier Link Radio | https://deeperlink.com:8012/stream | United States | New York City | 40.7587 | -73.9828 | deep house, house | MP3 320k rb:6c115d8d-70d7-42f4-b796-44e913ecdc18
-Radio Merveille Océan Indien | https://listen.radioking.com/radio/694373/stream/759203 | Reunion | Le Tampon | -21.1463 | 55.5311 | 974, créole | MP3 128k rb:4ba829cf-0778-4843-8401-dcb8de5be67d
+Radio Merveille Océan Indien | https://listen.radioking.com/radio/694373/stream/759203 | Réunion | Le Tampon | -21.1463 | 55.5311 | 974, créole | MP3 128k rb:4ba829cf-0778-4843-8401-dcb8de5be67d
 W RADIO 95.9 (Torreón) - 95.9 FM - XHCCAR-FM - Grupo Radio Cañón - Torreón, Coahuila | https://streaming.servicioswebmx.com/8204/stream | Mexico | Torreón | 25.5435 | -103.4104 | 95.9 fm, américa | MP3 192k rb:bcb73769-c671-4500-b162-6425587550e6
 Frequence 3 MP3 128Kbps | https://frequence3.net-radio.fr/frequence3-128.mp3 | France | Paris | 48.9490 | 2.3401 | adult cotemporary, top 40 | MP3 128k rb:19aacbd6-8af5-4041-ba2f-8eb119e78bc8
 МОЙГИДтв — аудиоэкскурсии (moygid.online) | https://moygid.online/radio.mp3 | Russia | Saint Petersburg | 59.9300 | 30.3300 | audio guide, culture | MP3 128k rb:3fefef81-0b20-4193-9dc7-c5839f5391eb
@@ -4001,7 +4001,7 @@ Suncity 104.9 FM | https://edge.mixlr.com/channel/ibrdq | Jamaica | Kingston | 1
 RMF PIOSENKA FILMOWA | http://217.74.72.10/rmf_piosenka_filmowa | Poland | Warsaw | 52.2285 | 21.0004 | rmf piosenka filmowa | MP3 128k rb:c895157b-7e62-48e3-86b0-e49a2661849e
 ESENCIA RADIO 107.1 (Zitácuaro) - 107.1 FM - XHETA-FM - Grupo Radio Zitácuaro - Zitácuaro, Michoacán | http://stream.zeno.fm/tou6mhyhcueuv | Mexico | Heróica Zitácuaro | 19.4353 | -100.3554 | 107.1 fm, américa | MP3 256k rb:3c9da09f-6225-4708-ba28-111a2cd44e21
 Antenna Web Oradea | https://tinyurl.com/Antenna-Web-Oradea | Romania | Oradea | 47.0746 | 21.9076 | adult contemporary, pop | MP3 320k rb:f67bb30c-4e11-44b6-bd94-e5b2862bd325
-Hot 97 FM | https://usa7.fastcast4u.com/proxy/hot97svg?mp=/1 | Saint Vincent And The Grenadines | Kingstown | 13.1690 | -61.2277 | contemporary hits, pop | MP3 320k rb:af5f4e87-fff0-43c3-b6af-706dc721bf5f
+Hot 97 FM | https://usa7.fastcast4u.com/proxy/hot97svg?mp=/1 | Saint Vincent and the Grenadines | Kingstown | 13.1690 | -61.2277 | contemporary hits, pop | MP3 320k rb:af5f4e87-fff0-43c3-b6af-706dc721bf5f
 WELT 95.7 Fort Wayne, Indiana - Community Radio | https://securestreams2.autopo.st:1069/WELT.mp3 | United States | Fort Wayne | 41.0790 | -85.1365 | community radio, oldies | MP3 48k rb:87d83b7a-c1a9-4779-87dd-e22d8e8ca62b
 RADIO HAFENSTRASSE | https://listen.radioking.com/radio/212434/stream/255523 | Germany | Essen | 51.4867 | 6.9768 | football, immerweiter | MP3 128k rb:85f669a9-bec8-420f-a246-f74d8b6be168
 Radio n31 | https://radion31.beheerstream.nl:8092/ | Netherlands | Leeuwarden | 53.2143 | 5.7953 | piraat, the best of 80's | MP3 320k rb:20d9fc8a-0cae-4384-87a0-8a5045e5c356
@@ -4220,7 +4220,7 @@ Anima Amoris Minimal Deep Techno | https://amoris.sknt.ru/minimal.mp3 | Russia |
 Radio Bardufoss | https://stream.bardufoss.no/radiobardufoss192 | Norway | Moen | 69.0552 | 18.5355 |  | MP3 192k rb:dd8632d5-abb1-411a-8e86-8e2ab6c4c223
 W RADIO 104.5 (Córdoba) - 104.5 FM - XHEVC-FM - Grupo Radio Cañón - Córdoba, Veracruz | https://streaming.servicioswebmx.com/8262/stream | Mexico | Córdoba | 18.8963 | -96.9355 | 104.5 fm, américa | MP3 128k rb:8109a430-3f24-4616-8a95-752dba100cd9
 EPIC CLASSICAL - Classical Romance | https://stream.epic-classical.com/classical-romance | Germany | Marburg an der Lahn | 50.8961 | 8.9062 | chillout, classical | MP3 192k rb:8b2da670-18bc-4bde-ae60-ebfef8985161
-Esoterica Radio S3 | https://esoterica.servemp3.com:444/listen/darkclubbing_darkelectro/radio.mp3 | Bosnia And Herzegovina | Pale | 43.6822 | 18.5211 | bass house, dark electro | MP3 192k rb:80891d3f-cf77-4fbf-a924-0274871a0bfb
+Esoterica Radio S3 | https://esoterica.servemp3.com:444/listen/darkclubbing_darkelectro/radio.mp3 | Bosnia and Herzegovina | Pale | 43.6822 | 18.5211 | bass house, dark electro | MP3 192k rb:80891d3f-cf77-4fbf-a924-0274871a0bfb
 Radio Xtream Romania - Brăila | https://asculta.radioxtream.com/8022/stream | Romania | Galaţi | 45.2715 | 27.9745 | club, dance | MP3 128k rb:6d5d259d-db1c-4128-bc30-455fb358ce1b
 Rádio Regional - Vila Real | https://play.radioregional.pt/stream/3/ | Portugal | Vila Real | 41.2943 | -7.7462 | hits, local news | MP3 128k rb:823b9c9b-182a-462b-8fe4-e6e6d12ec9a6
 ORF - Radio Salzburg | https://orf-live.ors-shoutcast.at/sbg-q1a | Austria | Salzburg | 47.7884 | 13.0498 | orf | MP3 128k rb:50890eab-41ac-4f6b-8839-022f0c20444b
@@ -4874,7 +4874,7 @@ Original Fast Radio | https://az-de-01.worldradiobeat.com:8000/live | Serbia | N
 Radio Regenbogen 80er | https://stream.regenbogen.de/80er/mp3-128/radiobrowser | Germany | Mannheim | 49.4985 | 8.5022 | 80er, britpop | MP3 ?k rb:4797eeee-bc93-4438-a66b-a7e24950c0c4
 FluxFM Sachsen | https://streams.fluxfm.de/fallback-simulcast/mp3-320 | Germany | Garbsen | 52.3053 | 9.4508 | trance | MP3 ?k rb:9b5c9516-d195-4e13-b152-0afdd1fa2ccf
 East of Russia (Восток России) | http://109.70.24.182:8000/stream/1/ | Russia | Khabarovsk | 48.4766 | 135.0685 | rock, soft rock | MP3 256k rb:d7424e90-d8aa-4e8d-9933-7a88ff6a1b87
-Radio Kalesijski Ba | https://stream1.srvnetplus.com:18102/ | Bosnia And Herzegovina | Zenica | 44.1319 | 18.0351 | folk music | MP3 128k rb:6eff3da1-3b39-4b6b-b904-8c7a019c2812
+Radio Kalesijski Ba | https://stream1.srvnetplus.com:18102/ | Bosnia and Herzegovina | Zenica | 44.1319 | 18.0351 | folk music | MP3 128k rb:6eff3da1-3b39-4b6b-b904-8c7a019c2812
 DSS RADIO 107.9 (Chilpancingo) - 107.9 FM - XHSCAS-FM - Digital con Sentido Social 106.3, A.C.… | https://cast3.my-control-panel.com/proxy/dssradio?mp=/; | Mexico | Chilpancingo | 17.5551 | -99.5081 | 107.9 fm, américa | MP3 320k rb:60147fa0-1b68-47ba-b1a4-8c1ce708165b
 Transilvania -statia Zalău 94.6 FM | https://stream2.radiotransilvania.ro/Zalau | Romania | Zalău | 47.1826 | 23.0555 | local news, local radio | MP3 128k rb:db54091f-44f3-42dd-b492-8cc83451c996
 Hasi from Hell | https://stream.laut.fm/hasifromhell | Germany | Wolfsburg | 52.4399 | 10.8984 |  | MP3 128k rb:8efb79e4-2330-48ad-b543-dce74b35cd95
@@ -4933,7 +4933,7 @@ Valori Românești Radio | https://securestreams6.autopo.st:2250/stream?ver=1844
 Moonrise Radio | https://radio.sunrise85fm.ro/listen/moonrise_radio/radio.mp3 | Romania | Braşov | 45.6549 | 25.6346 | dance, deep house | MP3 128k rb:d4ed26a1-5714-4916-90b2-e233b2f7daa4
 RADIO NEWS ROMÂNIA FM -Botoșani | https://stream-175.surfernetwork.com/7aawq7feqrhvv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiI3YWF3cTdmZXFyaHZ2IiwiaG9zdCI6InN0cmVhbS0xNzUuc3VyZmVybmV0d29yay5jb20iLCJ0bSI6ZmFsc2UsInJ0dGwiOjUsImp0aSI6Imx0VFZ0blZVUWZPRzVqeXREQnowTUEiLCJpYXQiOjE3OTIyMjY1MjcsImV4cCI6MTc5MjIyNjU4N30.skMT_IiH3zYzPMAl5azNzn38jpceMQnkzAs19fftD_k | Romania | Botoşani | 47.7509 | 26.6469 | music, news | MP3 128k rb:e50fd633-f0ce-4961-83f8-42faad534683
 Ярус | https://radio3.4m3.ru/listen/yarus/radio.mp3 | Russia | Chelyabinsk | 55.1644 | 61.4368 | music | MP3 192k rb:2df808c5-629c-4f15-addc-e2ae4ebcd630
-Radio Studio D | http://studiod.omerovic.info:8018/; | Bosnia And Herzegovina | Lukavac | 44.7043 | 18.4942 | folk, narodna | MP3 128k rb:3352c127-e31e-4c77-868d-148478dc633e
+Radio Studio D | http://studiod.omerovic.info:8018/; | Bosnia and Herzegovina | Lukavac | 44.7043 | 18.4942 | folk, narodna | MP3 128k rb:3352c127-e31e-4c77-868d-148478dc633e
 Radio Rouge FM 99.3 Country Hits | http://uk1.streamingpulse.com:7073/stream | United States | Wray | 40.1789 | -102.3047 | country | MP3 128k rb:00220083-313c-41ca-987a-aededf96dc36
 Radio Grésivaudan | https://live.aurafm.org/Radio-Gresivaudan | France | Chambéry | 45.5100 | 5.7774 | local news, local radio | MP3 320k rb:fb71aa45-cf9f-4744-a4bc-e0b751e649c8
 Радио Орфей - Хоры из опер 256kbps | https://channels.fonotron.ru:8000/Chan_62_256.mp3 | Russia | Moscow | 55.7420 | 37.6310 | choir, choral | MP3 256k rb:aeab8a57-5f6d-4ba7-b295-d7c0dcaaa850
@@ -4948,7 +4948,7 @@ Radio SCORPIO - Leuven, Be | http://stream.radioscorpio.be/stream | Belgium | Le
 Radio Tyneside | http://stream.radiotyneside.co.uk/tyneside128.mp3 | England | Newcastle upon Tyne | 54.9797 | -1.6165 | community radio, easy listening | MP3 128k rb:93afe734-6cff-4eb5-9418-d074365fbe39 (country: England, where the position is)
 Omroep Land van Cuijk (2nd server, 320k) | http://loa.beheerstream.nl:8048/stream | Netherlands | Nijmegen | 51.6867 | 5.7827 | local news, local radio | MP3 320k rb:22bd344b-24f8-4706-a785-7def77c4a8cb
 Sinterklaas Radio | http://stream.tbmp.nl:8000/sinterklaasradiohigh.mp3 | Netherlands | Amsterdam | 52.3802 | 4.8978 | holiday music (nov-dec), kids | MP3 320k rb:9c2d0f5f-be58-4cf1-b80f-4ea103d3ed35
-Radio Breza | https://sonicpanel.vmakerhost.com/8192/stream | Bosnia And Herzegovina | Visoko | 44.0187 | 18.2618 | bosna | MP3 128k rb:b813c53b-c1d0-4daf-9071-66e5eead0c85
+Radio Breza | https://sonicpanel.vmakerhost.com/8192/stream | Bosnia and Herzegovina | Visoko | 44.0187 | 18.2618 | bosna | MP3 128k rb:b813c53b-c1d0-4daf-9071-66e5eead0c85
 Radio Rasa Schaffhausen | https://radio.upstream-cloud.ch/radiorasa-128.mp3 | Switzerland | Schaffhausen | 47.6961 | 8.6338 | alternative, independent | MP3 128k rb:64bf4040-d07a-418b-a7a3-9cec29107091
 Hrvatski radio - Rock | http://23623.live.streamtheworld.com:3690/HR_ROCK_SC | Croatia | Zagreb | 45.7929 | 15.9739 | rock | MP3 128k rb:ae9f57bd-2efd-43ed-95ec-89b4c7aafbe8
 La Voz Radio (Mexicali) - 101.3 FM - XHABCA-FM - Radio Cañón / NTR Medios de Comunicación… | https://streaming.servicioswebmx.com/8286/stream | Mexico | Mexicali | 32.6271 | -115.4522 | 101.3, 101.3 fm | MP3 128k rb:5c700082-95ec-4621-810f-ca58bf4008a0
@@ -5125,7 +5125,7 @@ Coast 101.1 | https://coast-broadcasting-limited.streamb.live/SB00357 | Canada |
 ROMÁNTICA 93.1 (San Luis Potosí) - 93.1 FM - XHEI-FM - Grupo AS Comunicación / Radiorama - San… | https://stream.zeno.fm/uzejcai7evcvv | Mexico | San Luis Potosí | 22.1524 | -100.9765 | 93.1 fm, américa | MP3 128k rb:bb7b3ef0-e262-452b-a2b6-18d5c0b04246
 Lifted Radio | https://stream.zeno.fm/dfetfazcwxjtv | South Africa | Trompsburg | -29.9121 | 25.8398 |  | MP3 128k rb:a9861981-51ca-45c4-b0e1-444176ece18e
 RMF Ziom | https://rs6-krk2.rmfstream.pl/rmf_ziom | Poland | Warsaw | 52.2262 | 21.0505 |  | MP3 128k rb:e8fc56e8-0f97-4375-868a-4c58f028ddf8
-Radio Daš Extra | http://cast2.name.ba:8085/stream | Bosnia And Herzegovina | Bijeljina | 44.7574 | 19.2162 |  | MP3 128k rb:b5705de2-ffb6-4f5c-8095-693cdbece876
+Radio Daš Extra | http://cast2.name.ba:8085/stream | Bosnia and Herzegovina | Bijeljina | 44.7574 | 19.2162 |  | MP3 128k rb:b5705de2-ffb6-4f5c-8095-693cdbece876
 Hits FM 897 | https://s44.maxcast.com.br:8255/live | Brazil | Porto Alegre | -29.9906 | -51.0677 |  | MP3 128k rb:acf7f401-8a0b-4174-919e-c8989c73780c
 K-GHOST Goodsprings Radio - AM 1610 FM / 101.3 - Goodsprings, Nevada | https://www.streamcontrol.net:8444/s/12080 | United States | Sandy Valley | 35.8326 | -115.4347 | classic radio drama, old time radio | MP3 128k rb:5e2fc6b6-7f6d-4490-88ea-e02c0bfbf56f
 WAQM The Legacy | http://a10.asurahosting.com:7550/radio.mp3 | United States | Lansing | 42.7479 | -84.5698 |  | MP3 128k rb:05ae83df-e620-48cf-b2b0-9cdda8021c8a
@@ -5401,7 +5401,7 @@ Radio SAW - Relax | https://stream.saw-musikwelt.de/saw-relax/stream.mp3 | Germa
 Omroep Voeren - Vroenhoven, Be | http://stream.omroepvoeren.be/radio/8000/radio.mp3 | Belgium | Liège | 50.7570 | 5.7597 |  | MP3 320k rb:9ff26473-b290-4b99-93a1-be553d9dab2a
 Radio Bucovina | http://live.radiobucovina.ro:8000/ | Romania | Rădăuți | 47.8242 | 25.9264 | manele și petrecere | MP3 128k rb:f31991fe-00a6-4ea2-b0a9-2f80c71c4484
 eMusic Site | https://solid67.streamupsolutions.com/proxy/wvsivbgn/stream | Greece | Athens | 37.9201 | 23.9097 | alternative, classic hits | MP3 320k rb:ebdbf361-faf1-44cc-b27b-0cf5aa71b4b3
-Sensuelle Radio Réunion | https://radio10.pro-fhi.net/radio/9169/stream | Reunion | Saint-Denis | -20.8810 | 55.4482 | 974, créole | MP3 320k rb:b8a78bf0-e219-4670-b5d5-a3bb5d88490e
+Sensuelle Radio Réunion | https://radio10.pro-fhi.net/radio/9169/stream | Réunion | Saint-Denis | -20.8810 | 55.4482 | 974, créole | MP3 320k rb:b8a78bf0-e219-4670-b5d5-a3bb5d88490e
 Radio X 256 | https://stream.radiox.sk:8443/radiox_256.mp3 | Slovakia | Žilina | 49.2072 | 18.7581 |  | MP3 256k rb:70e74968-bb73-4555-92fc-49004b0f525d
 radio 17 | https://stream.laut.fm/radio-17 | Germany | Nienburg | 52.7816 | 9.2248 | pop | MP3 128k rb:117b2db5-a145-411c-82af-951b14d8fd0f
 EdMateo's Radio | https://radio.edmateo.site/live | Colombia | Bogotá | 4.7123 | -74.1628 | colombia, hip-hop | MP3 128k rb:eb34c30f-9172-4d56-938e-59be9a2e7f94
@@ -5447,7 +5447,7 @@ EHR Ice Ice Party | http://stream.ehrhiti.lv:8000/Stream_67.mp3 | Latvia | Riga 
 LOS40 Oaxaca - 89.7 FM - XHOCA-FM - Grupo Radio Cañón - Oaxaca, Oaxaca | https://streaming.servicioswebmx.com/8270/stream | Mexico | Oaxaca | 17.0622 | -96.7232 | 89.7 fm, américa | MP3 128k rb:82e6c9de-f7d9-4816-8bcf-27b3dafaab7c
 RADIO BOB! Rockparty | http://streams.radiobob.de/rockparty/mp3-192/mediaplayer/ | Germany | Kassel | 51.3150 | 9.4933 | metal, rock | MP3 ?k rb:a12d24f6-d2b0-4f7c-98ca-6852ff4ef7af
 Radio Saint Ferréol | https://live.aurafm.org/RadioSaintFerreol | France | Crest | 44.7286 | 5.0227 |  | MP3 ?k rb:ae363684-a13c-4f70-9dcb-497193b0cd61
-RC Radio Reconnaissance du Coeur | https://listen.radioking.com/radio/672001/stream/736156 | Reunion | Le Tampon | -21.1543 | 55.5373 | 974, créole | MP3 128k rb:2e15e691-085d-4758-8835-f60ba445e385
+RC Radio Reconnaissance du Coeur | https://listen.radioking.com/radio/672001/stream/736156 | Réunion | Le Tampon | -21.1543 | 55.5373 | 974, créole | MP3 128k rb:2e15e691-085d-4758-8835-f60ba445e385
 hifreaksradio | https://stream.laut.fm/hifreaksradio | Switzerland | Luzern | 46.9736 | 8.4229 | alternative, indie | MP3 128k rb:a3fa1510-b4ce-4766-9104-cc6b26a42e5a
 Radio Bella Vista Ctes 92.1 | https://radio02.ferozo.com/proxy/ra02001485?mp=/stream | Argentina | Bella Vista | -28.5060 | -59.0473 |  | MP3 128k rb:6d2512ff-641f-403f-b016-abeace09d48a
 Rádio Caverá FM 87.9 | https://s05.maxcast.com.br:8012/live?id=692006007223 | Brazil | Rosário do Sul | -30.2458 | -54.9170 | nativista, pop | MP3 128k rb:94fe8c3e-f741-4aa7-a377-6b7bcfd763a1
@@ -5478,7 +5478,7 @@ Europe 2 New | https://europe2.lmn.fm/vr-wr1.mp3?aw_0_1st.playerid=lagardereappV
 Planet Music Bahía Blanca | https://strcdn.klm99.com:10987/planetbahia | Argentina | Bahía Blanca | -38.7264 | -62.2527 | music, talk | MP3 128k rb:ad752b05-eff5-4121-93c0-875e84a1cb90
 Teodoro sampaio SP | https://streaming.ebamix.com.br/listen/ebamix/radio.mp3?1770041585088 | Brazil | Teodoro Sampaio | -22.5352 | -52.1684 |  | MP3 192k rb:7dc73ea1-ca59-4a43-8162-38c847d5c327
 Tequila România -Radio Hip-Hop | http://necenzurat.radiotequila.ro:7000/; | Romania | Bucharest | 44.4355 | 26.1025 | hip-hop | MP3 128k rb:69f0c6fe-6a92-46b0-a7e5-4dd90d128b47
-Capital FM Réunion | https://capitalfmreunion.ice.infomaniak.ch/capitalfmreunion.mp3 | Reunion | Saint-Denis | -20.9171 | 55.4943 | 974, créole | MP3 128k rb:95ee019b-27d1-4fdf-878f-e78fc32f5266
+Capital FM Réunion | https://capitalfmreunion.ice.infomaniak.ch/capitalfmreunion.mp3 | Réunion | Saint-Denis | -20.9171 | 55.4943 | 974, créole | MP3 128k rb:95ee019b-27d1-4fdf-878f-e78fc32f5266
 Aldobaraldo - WebRadio | https://sr10.inmystream.it/proxy/asdaldob/stream | Italy | Turin | 45.0493 | 7.6602 |  | MP3 128k rb:deb6d8b4-4354-4f5a-b36b-2796de0a9418
 98.1 Alternativa 98 (Aguascalientes) - 98.1 FM - XHNM-FM - Radio y Televisión de Aguascalientes… | https://streamingcwsradio30.com/8016/stream | Mexico | Aguascalientes | 21.8828 | -102.2983 | 98.1 fm, adult alternative | MP3 192k rb:4c7ac3f0-a590-4ce0-9255-81d3cee69e70
 Kamloops Fire Rescue Scanner | http://icecast0.scanbc.com/kamloops | Canada | Kamloops | 50.6737 | -120.3453 |  | MP3 24k rb:2902b289-aa78-4177-bafe-51b80a186770
@@ -5689,7 +5689,7 @@ Radio Thonah | https://radiothonah.stream.laut.fm/radio_thonah?uuid=31157745-f59
 Onești City Radio | https://streamer.airadiohost.com/listen/air/a2 | Romania | Târgu Ocna | 46.2525 | 26.7713 | bacau, dance | MP3 128k rb:aff729f6-ba46-4396-ba9b-7e12b40f6e5a
 La Grande de Río Grande - 97.1 FM - XHZC-FM - Río Grande, ZA | http://radioforte.com:8004/; | Mexico | Río Grande | 23.8272 | -103.0341 | 97.1, 97.1 fm | MP3 128k rb:1a6d3a98-a49e-4566-8175-c44534e51f8b
 WGRV.FM | https://caster08.streampakket.com/proxy/wgrv/stream | Netherlands | Amsterdam | 52.3625 | 4.8848 | boogie, funk | MP3 192k rb:2559b75f-384b-4103-b6fb-0b4b3acb4a81
-Radio Novi Grad | http://s2.myradiostream.com:5584/ | Bosnia And Herzegovina | Novi Grad | 45.0492 | 16.3797 | folk, pop | MP3 128k rb:7095ad02-75cd-4650-ae6b-10ef6975679f
+Radio Novi Grad | http://s2.myradiostream.com:5584/ | Bosnia and Herzegovina | Novi Grad | 45.0492 | 16.3797 | folk, pop | MP3 128k rb:7095ad02-75cd-4650-ae6b-10ef6975679f
 Nevermore Radio - Nevermore Network | https://panel.nevermorenetwork.com/listen/nevermorenetwork.com/radio.mp3 | Colombia | Bogotá | 4.7379 | -74.0483 | alternative, ambient | MP3 128k rb:baccaeaf-4cfa-4e52-bd01-031c617263ec
 RadNet Radio | https://radnet.pcmac2112.net/listen/radnet_radio/radio.mp3 | United States | Clearwater | 27.9597 | -82.7851 |  | MP3 192k rb:28848e93-fd1f-4b1a-9322-bafcad7f16ff
 RadioRadio | https://c16.radioboss.fm:18014/stream | Poland | Zgierz | 51.9634 | 19.2660 |  | MP3 128k rb:14273259-95b1-4c88-aad6-8834eca980c4
@@ -5827,7 +5827,7 @@ RadioHBR | https://stream1.radiohbr.de:80/stream.mp3 | Germany | Gummersbach | 5
 WPSL 1590 am | https://us2.maindigitalstream.com/ssl/WPSL | United States | Port Saint Lucie | 27.2960 | -80.3484 |  | MP3 128k rb:754cb6bd-6da6-4092-b4dd-6add46306b57
 Vida (Piedras Negras) - 99.9 FM - XHSG-FM - Grupo Audiorama Comunicaciones - Piedras Negras… | https://ss1.audiorama.com.mx:6670/stream/ | Mexico | Piedras Negras | 28.7050 | -100.5162 | 99.9 fm, américa | MP3 64k rb:b4f3011d-94c0-4461-bd2a-c5efcb4f5f0a
 Conectando Estéreo 91.5 FM | https://cloudstream2036.conectarhosting.com/8200/stream | Colombia | Chaparral | 3.6121 | -75.4102 | crossover | MP3 128k rb:1da1d047-7918-4f09-a50c-2eb2f91ab05b
-Radio Čapljina | http://s8.iqstreaming.com:8016/stream | Bosnia And Herzegovina | Ljubuški | 43.1129 | 17.7028 | various | MP3 96k rb:c39d1a7e-038e-432c-b0b6-7bcfc047538d
+Radio Čapljina | http://s8.iqstreaming.com:8016/stream | Bosnia and Herzegovina | Ljubuški | 43.1129 | 17.7028 | various | MP3 96k rb:c39d1a7e-038e-432c-b0b6-7bcfc047538d
 Harrogate Hospital Radio | http://uksoutha.streaming.broadcast.radio:26750/harrogatehospitalradio | England | Harrogate | 53.9938 | -1.5179 | classic hits, hospital radio | MP3 ?k rb:635f6adc-fbd4-4339-9e30-b89c5e35d3ac (country: England, where the position is)
 Ορθοδοξία Παναγώπουλος | https://rasp35.ddnsfree.com:3535/pngpls | Greece | Irákleion | 35.3374 | 25.1643 | ομιλίες, ορθοδοξία | MP3 32k rb:52323e46-20ac-4a2e-b54d-ca5f1f7ecb07
 FM+ | https://audio5.tustreaming.cl/8010/fmmas | Chile | Talca | -35.4263 | -71.6659 |  | MP3 128k rb:01506b75-2d42-4ab6-9c44-2081635582b8
@@ -6039,7 +6039,7 @@ Radio Korčula 107,5FM | http://shoutcast.pondi.hr:8005/; | Croatia | Korčula |
 WCWM | https://wcwm.broadcasttool.stream/wcwm-onair | United States | Williamsburg | 37.2716 | -76.7144 | college radio, freeform | MP3 128k rb:13f5e9f5-14f0-4c04-94e4-99ce2409275d
 Sud Radio -Craiova 97.4 FM | http://radiosud.ro/stream/ | Romania | Craiova | 44.3172 | 23.7985 | local news, local radio | MP3 ?k rb:98bac757-0eaa-423c-9f29-9debe853bc4d
 HouseParty Radio (128Kbps MP3) | http://cloud.housepartyradio.net:8000/online.mp3 | England | St Helens | 53.5638 | -2.6312 |  | MP3 192k rb:e6139695-0ba8-4945-8adf-6afb0229548a (country: England, where the position is)
-WaveMaster Radio | https://wavemaster.diskstation.me/listen/wavemaster_radio/radio.mp3 | Coted Ivoire | Abidjan | 5.3504 | -4.0098 | afrobeat, hip hop | MP3 192k rb:a9dd1769-5dd7-4221-8ac4-bf490ab3e7de
+WaveMaster Radio | https://wavemaster.diskstation.me/listen/wavemaster_radio/radio.mp3 | Côte d'Ivoire | Abidjan | 5.3504 | -4.0098 | afrobeat, hip hop | MP3 192k rb:a9dd1769-5dd7-4221-8ac4-bf490ab3e7de
 Harmony 80er Wave Pop | http://mp3.harmonyfm.de/hrmchannels/hqstars03.mp3?aw_0_req.gdpr=true | Germany | Frankfurt am Main | 50.1785 | 8.7362 | 80's, depeche mode | MP3 128k rb:b0ec2462-9398-43ad-8ada-e9923adcd778
 JCRadio | http://stream.laut.fm/jcradio | Germany | Halle (Saale) | 51.4429 | 11.9833 |  | MP3 128k rb:c2fb2fa9-8fe9-4a17-b092-aaee080f4474
 BesteFM Lounge | http://stream.epic-lounge.com/shisha-lounge?ref=streema | Germany | Köln | 50.9457 | 6.9266 | lounge music, lounge radio | MP3 192k rb:128d97dc-7866-4731-ac9e-a536ddfd2570
@@ -6160,7 +6160,7 @@ Le bouquet Granvillais | https://www.radioking.com/play/lebouquetgranvillais | F
 PAMA Classic | http://c19.radioboss.fm:8048/live | United States | Turlock | 37.4085 | -120.8503 | brazil, ca | MP3 128k rb:99f61e54-37c8-4beb-b013-48978583e8ca
 Radio Mixtape - 90er | https://mixtape.cast.addradio.de/mixtape/90er/high/stream.mp3 | Germany | Essen | 51.4872 | 6.8706 | 1990s, 1990s hits | MP3 192k rb:982e2a3e-b7ca-4339-855f-af45603ee6e9
 RUUT FM | https://a1.asurahosting.com/listen/ruut_fm/radio.mp3 | Estonia | Valga | 57.7751 | 26.0439 |  | MP3 320k rb:3cca537f-0533-4810-b962-c9885527c9d6
-Esoterica Radio S1 | https://esoterica.servemp3.com:444/listen/bigroom_electrohouse/radio.mp3 | Bosnia And Herzegovina | Sarajevo | 43.8150 | 18.5010 | big room house, electro house | MP3 192k rb:52e46973-6e4e-49b5-90b5-ea2b49f933a0
+Esoterica Radio S1 | https://esoterica.servemp3.com:444/listen/bigroom_electrohouse/radio.mp3 | Bosnia and Herzegovina | Sarajevo | 43.8150 | 18.5010 | big room house, electro house | MP3 192k rb:52e46973-6e4e-49b5-90b5-ea2b49f933a0
 RADIO ACTIVA 89.1 (Salina Cruz) - 89.1 FM - XHIKE-FM - Ike Siidi Viaa, AC - Salina Cruz, Oaxaca | http://sp3.servidorrprivado.com/6617/; | Mexico | Salina Cruz | 16.1838 | -95.1973 | 89.1 fm, américa | MP3 64k rb:5a189b64-3024-4af4-9443-fc54d37b3a98
 Radio ZET Kids | http://zetkid-01.cdn.eurozet.pl:8434/listen.pls | Poland | Warsaw | 52.2220 | 21.0405 | children, kids | MP3 128k rb:8b42599e-b6ca-4867-ac7d-23c9b22b9f38
 Real Rock Revival | https://puma.streemlion.com:2085/stream | United States | Toronto | 43.5848 | -79.3082 | alternative rock, classic rock | MP3 128k rb:c9e17187-7b9f-48af-8454-0cf8462302c7
@@ -6261,7 +6261,7 @@ Mad Music Asylum | http://albireo.shoutca.st:8250/stream | United States | Bambe
 Club FM MP3 192 kbit/s | https://rs7.stream24.net/clubfm.mp3 | Germany | Bamberg | 49.8916 | 10.8868 | party, party hits | MP3 192k rb:d4161d25-c12d-4297-aa63-fce935dd5da6
 Radio Regenbogen - Ed Sheeran | https://stream.regenbogen.de/edsheeran/mp3-128/radiobrowser | Germany | Mannheim | 49.4988 | 8.5023 | ed sheeran, love-songs | MP3 ?k rb:e30bcdbc-b830-4998-bb71-5d63157575f2
 KE 104.5 (Navojoa) - 104.5 FM - XHKE-FM - Uniradio - Navojoa, SO | https://streamingcwsradio30.com:7031/stream | Mexico | Navojoa | 27.0733 | -109.4447 | 104.5, 104.5 fm | MP3 128k rb:ccda9a0e-aa16-4133-a196-114a7bc1f436
-RVK | http://rvk2021.radioca.st:8206/stream | Bosnia And Herzegovina | Velika Kladuša | 45.1857 | 15.8048 |  | MP3 192k rb:83472775-fa52-4632-899b-f0ebe2acf002
+RVK | http://rvk2021.radioca.st:8206/stream | Bosnia and Herzegovina | Velika Kladuša | 45.1857 | 15.8048 |  | MP3 192k rb:83472775-fa52-4632-899b-f0ebe2acf002
 Replica Radio | https://securestreams.autopo.st:2490/ | Romania | Cluj-Napoca | 46.7390 | 23.5464 | disco, folk | MP3 128k rb:a764ec3b-e258-4b51-9bea-20ab95b09370
 RADIO UNIVERSIDAD 89.5 (Querétaro) - 89.5 FM - XHUAQ-FM - Universidad Autónoma de Querétaro… | https://estaciones.uaq.mx:8000/radio.mp3 | Mexico | Santiago de Querétaro | 20.5937 | -100.3923 | 89.5 fm, américa | MP3 128k rb:20acf04d-8e12-4eca-9409-ce6f7cbe4511
 Sky.Net -Radiosky Manele | https://stream.gestiondeservidor.com/8100/stream | Spain | Gijón | 43.5407 | -5.6631 | manele | MP3 128k rb:6a5fd1a0-a7bf-412f-a61c-a4dcee9aee36
@@ -6297,7 +6297,7 @@ RBS Radio | http://streams.movemedia.eu/rbs | Belgium | Aalst | 51.0648 | 4.0272
 Mataró Ràdio | https://relay.stream.enacast-cloud.com:30049/mataroradioHD.mp3 | Spain | Badalona | 41.5389 | 2.4417 | debate, local news | MP3 128k rb:06f3f6f6-5972-449b-b814-d4643d7f1678
 La Bestia Grupera (Chihuahua) - 99.3 FM - XHRPC-FM - Grupo Audiorama Comunicaciones - Chihuahua, CH | https://ss1.audiorama.com.mx:6646/stream | Mexico | Chihuahua | 28.6543 | -106.0903 | 99.3, 99.3 fm | MP3 96k rb:c04d8147-ac87-44f5-8d20-5e1ffc91ba73
 Radio Bingo - Roeselaere, Be | http://audiostreamen.nl:8044/stream/1/ | Belgium | Kortrijk | 50.9439 | 3.1269 |  | MP3 128k rb:d1f130e9-4e9f-46eb-a12d-37c79c6b81c6
-Tropik FM Live St Barth | https://stream10.vestaradio.com/TROPIKFM | Dutch Part Sint Maarten | Upper Prince’s Quarter | 17.9074 | -62.8502 |  | MP3 128k rb:324a797f-7298-456f-8d19-b3a3928a784e
+Tropik FM Live St Barth | https://stream10.vestaradio.com/TROPIKFM | Sint Maarten | Upper Prince’s Quarter | 17.9074 | -62.8502 |  | MP3 128k rb:324a797f-7298-456f-8d19-b3a3928a784e
 Guararema 103.5 FM | https://srv1.braudio.com.br:7020/; | Brazil | Blumenau | -26.9189 | -49.0617 |  | MP3 256k rb:fdbb0339-e51d-4922-bd90-0f556b9967cc
 Radio Stournareika 92.5 fm Stereo | https://i8.streams.ovh/sc/radiostournareika/stream | Greece | Gómfoi | 39.4531 | 21.4899 |  | MP3 192k rb:caa4aa2c-d32b-45d6-8e7a-145590006d83
 Radio Popullore | https://cp1.sednastream.com/proxy/shqipfolk/stream | Albania | Tirana | 41.3170 | 19.7997 | folk music | MP3 128k rb:57191e9d-ba42-4a45-9104-3964b27275d3
@@ -6487,7 +6487,7 @@ Radio Echo des Choucas (REC) | https://hosting.radiomedia.fr:2005/stream | Franc
 CKGS "Hit Country 105.5 Beauce" Saguenay, QC | https://26313.live.streamtheworld.com/CHCT_FM_SC | Canada | Saguenay | 48.4017 | -71.0582 | country, francophone country | MP3 96k rb:99e7a69c-72f7-4c9d-b976-50b9325f7fef
 WIOP 95.1 FM | http://s4.yesstreaming.net:7119/;audio.mp3?hash=1538009522657 | United States | Valley Station | 38.0284 | -85.6937 | bible, bible study | MP3 128k rb:168d38d1-ddf1-40fc-b5af-6c152fc4f810
 SomaFM Jolly Old Soul | https://ice5.somafm.com/jollysoul-128-mp3 | United States | Stockton | 37.8098 | -121.2863 | somafm | MP3 128k rb:d426ce87-dbd5-45e8-a691-0aa65e754c6f
-Esoterica Radio S5 | https://esoterica.servemp3.com:444/listen/synthwave_electronicrock/radio.mp3 | Bosnia And Herzegovina | Sarajevo | 43.7076 | 18.4358 | darksynth, electro industrial darkwave eb | MP3 192k rb:d71c5650-1792-4de3-8ce3-32fad008c669
+Esoterica Radio S5 | https://esoterica.servemp3.com:444/listen/synthwave_electronicrock/radio.mp3 | Bosnia and Herzegovina | Sarajevo | 43.7076 | 18.4358 | darksynth, electro industrial darkwave eb | MP3 192k rb:d71c5650-1792-4de3-8ce3-32fad008c669
 Metropol FM (Rhein-Main) | https://metropolfm.streamabc.net/77-mfmrheinmain-mp3-256-6721898?sABC=69n71os0%230%23759014699s404754o2p8p1q4q62r578p%23enqvbfcurer&aw_0_1st.playerid=radiosphere&amsparams=playerid:radiosphere;skey:1772559344 | Germany | Frankfurt am Main | 50.1028 | 8.6407 |  | MP3 ?k rb:a696d06b-8f0e-4b3a-982c-59f2814c73d5
 Zocker-FM | https://zockerfm.stream.laut.fm/zockerfm?uuid=2512b624-92a6-efd3-1fb2-8792b403ffb8&t302=2026-10-17_22-54-37 | Germany | Saalfeld | 50.6478 | 11.3608 | beats, charts | MP3 128k rb:11d36148-d486-47a7-8440-4f0dd731c944
 Radio Q 100,7FM - Lokalne radio z Kutna | http://79.188.161.82:8020/;stream.mp3 | Poland | Kutno | 52.2318 | 19.3607 |  | MP3 128k rb:73d9d9c6-ce66-40b1-a8fa-a850f9c17037
@@ -6667,7 +6667,7 @@ Radio UDEM (Monterrey) - 90.5 FM - XHUDEM-FM - Universidad de Monterrey - Monter
 CJLM-FM "O 103.5" Joliette, QC | https://26313.live.streamtheworld.com/CJLM_FM_SC | Canada | Joliette | 46.0223 | -73.4407 | adult contemporary, adulte contemporain | MP3 96k rb:80b89cfe-53bf-4a1b-a5b5-7e1e158edceb
 Radio Regenbogen - Von Morgens bis Abends | https://stream.regenbogen.de/morgensbisabends/mp3-128/radiobrowser | Germany | Mannheim | 49.4984 | 8.5028 | smooth lounge | MP3 ?k rb:678f34e5-1346-4eff-9370-6222b4a017e9
 Cape FM | https://stream.zeno.fm/qpq7hygy77zuv | Ghana | Cape Coast | 5.1306 | -1.2758 | cape coast, entertainment | MP3 128k rb:a1bd1537-a171-4b52-8d98-7221b5b95ede
-Radio Postaja Odzak | https://stream.rcast.net/70602 | Bosnia And Herzegovina | Gradačac | 45.0123 | 18.3266 | classic rock, folk | MP3 128k rb:ba798dfd-f293-4247-ab35-a3bed05c5ede
+Radio Postaja Odzak | https://stream.rcast.net/70602 | Bosnia and Herzegovina | Gradačac | 45.0123 | 18.3266 | classic rock, folk | MP3 128k rb:ba798dfd-f293-4247-ab35-a3bed05c5ede
 Radio Amica, Biella | https://s10.myradiostream.com/35674/listen.mp3 | Italy | Biella | 45.5375 | 8.0557 |  | MP3 128k rb:615ce604-7489-4f5a-bad5-cfc9daa46e17
 Leawood Baptist Church in Memphis, Tennessee | https://usa10.fastcast4u.com/leawood | United States | Memphis | 35.1628 | -89.9391 |  | MP3 128k rb:fb687b05-8f83-4f27-a83e-4e65c263e75d
 CIVL-FM 103.9 University of the Fraser Valley - Abbotsford, BC | https://live.civl.ca:8000/live.mp3 | Canada | Abbotsford | 49.0304 | -122.2834 | campus radio, university radio | MP3 ?k rb:2ee40ae7-7807-46cb-bf1b-049f72e2268b
@@ -6882,7 +6882,7 @@ Hitradio Corax | http://116.203.154.83/corax_192.mp3 | Germany | Halle (Saale) |
 The Indie Beat Radio - Bonkwave Channel | https://azura.theindiebeat.fm/listen/not_what_i_call_radio_bonk_wave/radio.mp3 | United States | Long Branch | 40.2201 | -74.0144 | bonkwave, dark ambient | MP3 128k rb:c360545d-6596-4ba4-8f55-45ddd008e287
 Perth 6IX | https://playerservices.streamtheworld.com/api/livestream-redirect/6IX.mp3 | Australia | Bedfordale | -32.3342 | 115.9670 | classic hits 60s 70a 80s | MP3 64k rb:33bcb88f-14b8-494c-89f5-a4a2bd14969c
 Fallout '26 Radio | https://radio.greenwoodlabs.ca/listen/fallout26/radio.mp3 | Canada | Markham | 43.9011 | -79.0683 | big band, blues | MP3 192k rb:07306812-2360-4cef-8547-f0f8cc123380
-La 1ere Saint Pierre et Miquelon (975) | https://saint-pierreetmiquelon.ice.infomaniak.ch/saint-pierreetmiquelon-128.mp3 | Saint Pierre And Miquelon | Saint-Pierre | 46.7832 | -56.1734 | public radio | MP3 128k rb:9431e482-e831-4c69-b132-13f174e126ea
+La 1ere Saint Pierre et Miquelon (975) | https://saint-pierreetmiquelon.ice.infomaniak.ch/saint-pierreetmiquelon-128.mp3 | Saint Pierre and Miquelon | Saint-Pierre | 46.7832 | -56.1734 | public radio | MP3 128k rb:9431e482-e831-4c69-b132-13f174e126ea
 Radio Utopia Baal, be | http://radioutopia.beheerstream.nl:8030/stream | Belgium | Leuven | 50.9936 | 4.7541 |  | MP3 128k rb:81186c40-ca7d-46b5-88cf-6935a9a59a45
 WNSP 105.5 FM Bay Minette | http://centova.rockhost.com:8054/wnsp | United States | Bay Minette | 30.8944 | -87.7764 | sports | MP3 128k rb:1fe7ceb8-628c-412b-9e55-bebe6cbd62b1
 Solo Radio | https://streams.mediaplatformurk.nl/soloradio | Netherlands | Kampen | 52.6881 | 5.7623 | soft adult contemporary | MP3 192k rb:6f4c88ed-b787-44fc-ba6f-16ca4d45845d
@@ -6917,7 +6917,7 @@ Radio Palermo - Essen, be | http://167.172.62.28/radio/8000/radio.mp3 | Belgium 
 Xangri-lá FM | https://cast4.audiostream.com.br:2659/mp3 | Brazil | Capão da Canoa | -29.8078 | -50.0716 | 80's, hits | MP3 96k rb:afe8b858-c5bf-40b8-b270-02e4cac71abb
 Jaguarão FM 87,9 | https://stm19.xcast.com.br:11526/stream | Brazil | Jaguarão | -32.5623 | -53.3819 | eclectic programming, radio comunitaria | MP3 128k rb:3d88b1f3-4963-4ea2-8ae0-4fe598cb6cb9
 Laut.FM - Chiliguerilla | https://chiliguerilla.stream.laut.fm/chiliguerilla?1735142890284=&t302=2024-12-25_16-08-10&uuid=e211741c-3970-413c-a099-fdd330787564 | Germany | Giengen an der Brenz | 48.4553 | 10.2761 | alternative, alternative rock | MP3 128k rb:52c8e507-51e2-49f9-a978-4b86d78a6695
-Velkaton | http://188.40.62.20:8044/;stream.mp3?_=1 | Bosnia And Herzegovina | Velika Kladuša | 45.1829 | 15.8045 | folk | MP3 128k rb:e17c4dc1-42ff-4466-9925-bab2408cecac
+Velkaton | http://188.40.62.20:8044/;stream.mp3?_=1 | Bosnia and Herzegovina | Velika Kladuša | 45.1829 | 15.8045 | folk | MP3 128k rb:e17c4dc1-42ff-4466-9925-bab2408cecac
 Chabad.org Torah Classes Radio | https://streams.radio.co/s9f35c3afc/listen | United States | New York City | 40.7772 | -74.0039 | jewish, judaism | MP3 128k rb:a4926e73-3056-4279-b57d-6549393fdf63
 La Bestia Grupera (Cuautla) - 104.5 FM - XHCU-FM - Grupo Audiorama Comunicaciones - Cuautla, MO | https://ss1.audiorama.com.mx:6624/ | Mexico | Cuautla | 18.8299 | -98.9426 | 104.5, 104.5 fm | MP3 96k rb:e1cdefd4-39e2-4d35-8417-e174ead1f570
 PIANO COVERHITS by Epic Piano | https://stream.epic-piano.com/piano-coverhits?ref=radiobrowser | Germany | Siegen | 50.9065 | 8.2617 | charts, classical piano | MP3 192k rb:ba3ca13b-147a-4591-b3c0-89c84cdd45ff
@@ -6980,7 +6980,7 @@ Gaydio Brighton | http://stream.gaydio.co.uk/gaydiosc.mp3 | England | Brighton |
 Radio Argayo | https://radiobot.radioslibres.info/radio/8030/radio.ogg | Spain | Torrelavega | 43.3539 | -4.0484 | music, spoken word | MP3 96k rb:f46229d0-d7d8-4c5e-860b-ed4e45b578c5
 IAradio Pop Rock | https://iaradiopoprock.ice.infomaniak.ch/iaradiopoprock-128.mp3 | France | Paris | 48.8533 | 2.3488 | pop rock | MP3 128k rb:04d1fc76-54b3-45d1-a636-95c0602ec020
 WXOU | https://a8.asurahosting.com/listen/wxou/radio.mp3 | United States | Troy | 42.7444 | -83.2242 | college radio | MP3 128k rb:bab0fcc0-cf83-4c2f-ad5e-d2f3c1054bf1
-Radio Slon | http://31.47.0.130:88/broadwavehigh.mp3 | Bosnia And Herzegovina | Tuzla | 44.5287 | 18.6827 |  | MP3 ?k rb:23d83b85-8631-460b-aba8-c85ca83b50b4
+Radio Slon | http://31.47.0.130:88/broadwavehigh.mp3 | Bosnia and Herzegovina | Tuzla | 44.5287 | 18.6827 |  | MP3 ?k rb:23d83b85-8631-460b-aba8-c85ca83b50b4
 Remanente de efraim | https://stream.zeno.fm/vxqg94xspc9uv | Argentina | Buenos Aires | -34.7029 | -58.4004 |  | MP3 128k rb:bcf5fc65-14c9-4457-8c91-72a2fe9d4acf
 Radio Gaga Vlasotince | http://stream1.srvnetplus.com:8074/stream | Serbia | Leskovac | 42.9675 | 22.1316 |  | MP3 128k rb:49568b87-4597-42de-9ce6-f2ba9e1697d6
 Radio 021 100% domaće | https://centova.dukahosting.com/proxy/021domaca/stream | Serbia | Novi Sad | 45.2575 | 19.8483 |  | MP3 128k rb:4fd158f6-7f93-43fd-b209-79d17826390d
@@ -7350,7 +7350,7 @@ Portobello Radio | https://uk1.internet-radio.com/proxy/portobelloradio?mp=/stre
 Radio YAN | https://237.185.153.160.host.secureserver.net/proxy/radioyan1/stream | France | Paris | 48.7860 | 2.4225 | armenian | MP3 128k rb:723b119a-37ea-431a-be85-f725ebafb948
 Rádio Educativa de Campinas | https://streaming.ima.sp.gov.br/educativa.mp3 | Brazil | Campinas | -22.8899 | -47.0768 | brazilian music | MP3 128k rb:78805c22-71d2-4a26-9dd6-885af634acca
 Radio Bildtstar | https://radio-bildtstar.nl/luisteren | Netherlands | Leeuwarden | 53.3017 | 5.7172 |  | MP3 224k rb:c7f11d81-e0d2-4bce-93a2-69ba1952e508
-Radio Bobar | https://stream.radios.rs:9082/stream | Bosnia And Herzegovina | Bijeljina | 44.7512 | 19.2165 | folk, pop | MP3 128k rb:a4115a29-3a4d-43d0-a5bd-a1e72ca3d028
+Radio Bobar | https://stream.radios.rs:9082/stream | Bosnia and Herzegovina | Bijeljina | 44.7512 | 19.2165 | folk, pop | MP3 128k rb:a4115a29-3a4d-43d0-a5bd-a1e72ca3d028
 KSRW Eastern Sierra Wave | https://streaming.live365.com/a20270 | United States | Lone Pine | 36.8025 | -118.1997 | classic rock | MP3 192k rb:8bc9216a-5617-4eca-81ae-cfd9289cb282
 Venlo Radio | https://nlpo.stream.vip/venlo/mp3-192/nlpo.stream.vip/ | Netherlands | Venlo | 51.3699 | 6.1674 | regional | MP3 ?k rb:8a7d6763-e6a0-47ec-a453-2aeb7f1ef5cd
 Radio Helsingør FM | https://stream.radiohelsingor.dk/rh | Denmark | Hørsholm | 56.0302 | 12.5893 |  | MP3 192k rb:5854189c-c4a2-4f10-861a-b095e7e4bcf9
@@ -7461,7 +7461,7 @@ FluxFM - Melides Art Radio | https://streams.fluxfm.de/Melides/mp3-320/streams.f
 Радио 53 Великий Новгород | http://84.242.241.66:8000/;stream.nsv | Russia | Velikiy Novgorod | 58.5400 | 31.3028 | pop, поп | MP3 192k rb:964fa46a-c2a1-4b96-a90d-54c6dce81001
 Supernova Party | https://ic2.smcdn.pl/6160-1.mp3#Supernova_Party | Poland | Warsaw | 52.2117 | 20.9949 | disco | MP3 128k rb:53195414-8978-42e0-a624-1fe43bb7ec4f
 RPR1. Hip-Hop | https://stream.rpr1.de/hiphop/mp3-128/radiobrowser | Germany | Mannheim | 49.4782 | 8.4222 | hip-hop, oldschool | MP3 ?k rb:67c48925-e57f-46fe-8989-320096e5a4b9
-Radio Magic Milići | http://stream.iradio.pro:8034/;*.mp3 | Bosnia And Herzegovina | Milići | 44.1643 | 19.0744 | folk music | MP3 96k rb:f86a026c-259a-43c6-bd38-128963e0950e
+Radio Magic Milići | http://stream.iradio.pro:8034/;*.mp3 | Bosnia and Herzegovina | Milići | 44.1643 | 19.0744 | folk music | MP3 96k rb:f86a026c-259a-43c6-bd38-128963e0950e
 Radio Fuori Campo | https://listen.radioking.com/radio/397948/stream/449947 | France | Lyon | 45.7628 | 4.8807 | culture, italian | MP3 128k rb:df966d38-7642-4bbf-a68d-f91588ca224b
 Radio Chetumal - 860 AM - XECTL-AM - SQCS (Sistema Quintanarroense de Comunicación Social)… | https://sp2.servidorrprivado.com/9132/stream | Mexico | Chetumal | 18.5159 | -88.3013 | 860 am, am | MP3 128k rb:ca7243ce-110e-40b2-b049-4a19f406f237
 Rádioweb Cult 22 | https://s24.maxcast.com.br:8168/live?id=1622747293019 | Brazil | Brasília | -15.7943 | -47.8827 | alternative rock, classic rock | MP3 128k rb:ada8b5ce-f118-4815-a5dd-ecbd47e13427

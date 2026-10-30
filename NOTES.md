@@ -1401,3 +1401,64 @@ bilinear" scaling (enlarge by the next whole number without filtering,
 then shrink to size with filtering), so every line keeps the same width
 and edges are only slightly soft. `config.ini` now stores the size in
 percent; build 32's 1-3 values are read as 100-300.
+
+## Windows port, W3: the station library (build 34, 2026-10-30)
+
+Same data as the Vita app, in `%APPDATA%\DX Garden\`: `stations.txt`
+(created from the bundled list on first run, never overwritten),
+`import\` for M3U/PLS files, `favourites.txt`, `recent.txt`, `config.ini`.
+Loading goes through core's `station_source` interface and
+`library_build()`, unchanged; `desktop/data.c` and `desktop/fs.c` are ports
+of the Vita ones with paths set at run time.
+
+**Stations window** (Explorer style): a tree on the left (Favourites,
+Recently Played, search results, Countries with their towns, Genres,
+Unplaced) and a sortable list of stations on the right (Name, Town,
+Country, Genre, Notes), with a draggable divider. Double-click or Enter
+plays; right-click (or the Menu key) gives Play, Add to/Remove from
+Favourites, Copy Stream Address, Place This Station and Properties. Find
+(Ctrl+F) uses core's search over station, town and country names. Empty
+lists say why they are empty.
+
+**Commands** (menus Station and File, and shortcuts): Favourite (Ctrl+D),
+Properties (Alt+Enter), Place This Station, Random Place (Ctrl+R, picks a
+place, opens it in the tree and plays one of its stations), Add Station by
+Address (writes `import\added-by-url.m3u`, as on the Vita), Reload Station
+Files (F5), Open Data Folder, and View, Load Report. Placing an imported
+station appends it to `stations.txt` and opens its town in the tree.
+Recently played is saved 5 s after a change, as on the Vita.
+
+**Now Playing** shows the station's town (click it to show the town in
+Stations), a favourite star, the title, buffer, volume and an address box
+for playing any stream.
+
+**UTF-8 file names.** Core uses `fopen()`, which on Windows takes the
+ANSI code page, so a data folder under a user name with an accent (Grás)
+would fail to open. `desktop/dxgarden.manifest` sets the process code page
+to UTF-8 (Windows 10 1903 and later), which fixes every file call at once;
+checked under Wine with a folder named `Grás`. The manifest also declares
+per-monitor DPI awareness.
+
+**Country names in the bundled list** (also affects the Vita app's list):
+Radio Browser strips punctuation from some official names, so
+`tools/rb_to_stations.py`'s table missed them. Added: "Coted Ivoire" to
+Côte d'Ivoire, "Democratic Peoples Republic Of Korea" to North Korea,
+"Dutch Part Sint Maarten" to Sint Maarten, "Falkland Islands Malvinas" to
+"Falkland Islands (Malvinas)" (the ISO form, restored), "Reunion" to
+Réunion, and "and", "of", "the" in lower case inside names (Trinidad and
+Tobago). The same mapping was applied to `assets/stations/stations.txt`
+(54 lines; nothing else in the file changed). Existing `stations.txt`
+files are the user's and aren't touched.
+
+**Checked here** with scripted sessions on a fresh data folder (Linux, and
+the Windows build under Wine): first run, search, favourites, the
+right-click menu, Properties, the Load Report with a broken line, an M3U
+import placed through Place Station (the line written to `stations.txt`
+was checked), Random Place and Add Station.
+
+**Known issues**
+
+- The Control Gallery moved to Help, Control Gallery.
+- Dialog labels have no access keys yet (Alt+letter to jump to a field).
+- Favourites can't be reordered in the app yet (the file can be edited).
+- Sleep timer and dark screen (Vita M5) are planned for W7.

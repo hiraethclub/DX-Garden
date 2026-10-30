@@ -1020,6 +1020,10 @@ int ui_list(ui_listview *lv, int x, int y, int w, int h)
         case SDLK_END: lv->sel = lv->n_rows - 1; break;
         case SDLK_RETURN:
         case SDLK_KP_ENTER:
+            if (UI.mods & SDL_KMOD_ALT) {
+                used = 0; /* Alt+Enter is Properties, for the caller */
+                break;
+            }
             if (lv->sel >= 0)
                 result |= LV_ACTIVATED;
             break;

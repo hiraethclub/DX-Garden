@@ -11,7 +11,8 @@
  *   --script "STEPS"              feed input, ';'-separated, one step a frame:
  *                                 move X Y, click X Y, dclick X Y, rclick X Y,
  *                                 down X Y, up X Y, key NAME (an SDL key name,
- *                                 "alt+f" style modifiers), wait N, shot FILE,
+ *                                 "alt+f" style modifiers), type TEXT,
+ *                                 wait N, shot FILE,
  *                                 quit. Coordinates are window points.
  */
 #include <stdio.h>
@@ -252,6 +253,16 @@ static int script_step(SDL_Window *win, char **cursor, int *wait)
             push_mouse(SDL_EVENT_MOUSE_BUTTON_UP, x, y, SDL_BUTTON_LEFT, 1);
         } else if (sscanf(step, " key %199s", arg) == 1) {
             push_key(arg);
+        } else if (strncmp(step, "type ", 5) == 0) {
+            /* SDL keeps the pointer until the event is handled, which is
+             * this frame; a static buffer outlives that. */
+            static char text[256];
+            SDL_Event e;
+            snprintf(text, sizeof(text), "%s", step + 5);
+            SDL_zero(e);
+            e.type = SDL_EVENT_TEXT_INPUT;
+            e.text.text = text;
+            SDL_PushEvent(&e);
         } else if (sscanf(step, " wait %f", &x) == 1) {
             *wait = (int)x;
             return 1;

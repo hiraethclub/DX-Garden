@@ -93,7 +93,18 @@ COUNTRY_NAMES = {
     "state of palestine": "Palestine",
     "republic of north macedonia": "North Macedonia",
     "holy see": "Vatican City",
+    # Radio Browser drops punctuation from some names; these are the forms
+    # it actually sends.
+    "democratic peoples republic of korea": "North Korea",
+    "coted ivoire": "Côte d'Ivoire",
+    "cote d'ivoire": "Côte d'Ivoire",
+    "dutch part sint maarten": "Sint Maarten",
+    "falkland islands malvinas": "Falkland Islands (Malvinas)",
+    "reunion": "Réunion",
 }
+
+# Small words inside a name stay lower case: "Trinidad and Tobago".
+SMALL_WORDS = ("And", "Of", "The")
 
 # Stream URLs that point back at Radio Garden (for example a
 # "listening-from-radio-garden" parameter) suggest the entry was copied
@@ -231,7 +242,10 @@ def country_name(s):
     s = clean(s, 80)
     if s.lower().startswith("the "):
         s = s[4:]
-    return COUNTRY_NAMES.get(s.lower(), s)
+    s = COUNTRY_NAMES.get(s.lower(), s)
+    for w in SMALL_WORDS:
+        s = s.replace(" %s " % w, " %s " % w.lower())
+    return s
 
 
 def genre_from_tags(tags):

@@ -348,6 +348,79 @@ static const char *C_SPEAKER_MUTE[] = {
     "................",
 };
 
+static const char *C_FIND[] = {
+    "................",
+    "....kkkk........",
+    "...kwwwwk.......",
+    "..kwccwwwk......",
+    "..kwcwwwwk......",
+    "..kwwwwwwk......",
+    "..kwwwwwwk......",
+    "...kwwwwk.......",
+    "....kkkkkk......",
+    "........kgk.....",
+    ".........kgk....",
+    "..........kgk...",
+    "...........kgk..",
+    "............kk..",
+    "................",
+    "................",
+};
+static const char *C_TOWN[] = {
+    "................",
+    "..........k.....",
+    ".........kmk....",
+    "........kmmmk...",
+    "..kkk..kmmmmmk..",
+    ".kmmmk.kwwwwwk..",
+    "kmmmmmkkwbwbwk..",
+    "kwwwwwkkwwwwwk..",
+    "kwbwbwkkwbwbwk..",
+    "kwwwwwkkwwwwwk..",
+    "kwbwbwkkwwkwwk..",
+    "kwwwwwkkwwkwwk..",
+    "kkkkkkkkkkkkkk..",
+    "eeeeeeeeeeeeeeee",
+    "................",
+    "................",
+};
+static const char *C_STAR_SMALL[] = {
+    "................",
+    "................",
+    "................",
+    ".......k........",
+    "......kYk.......",
+    "......kYk.......",
+    "..kkkkYYYkkkk...",
+    "...kYYYYYYYk....",
+    "....kYYYYYk.....",
+    "....kYYYYYk.....",
+    "...kYYkkkYYk....",
+    "...kYk...kYk....",
+    "...kk.....kk....",
+    "................",
+    "................",
+    "................",
+};
+static const char *C_REPORT[] = {
+    "..kkkkkkkkkk....",
+    "..kwwwwwwwwkk...",
+    "..kwkkkkkwwkwk..",
+    "..kwwwwwwwwkkkk.",
+    "..kwkkkkkkkwwwk.",
+    "..kwwwwwwwwwwwk.",
+    "..kwkkkkkkwwwwk.",
+    "..kwwwwwwwwwwwk.",
+    "..kwkkkkkkkkwwk.",
+    "..kwwwwwwwwwwwk.",
+    "..kwkkkkkwwrrwk.",
+    "..kwwwwwwwrwwrk.",
+    "..kwkkkkkwrrrrk.",
+    "..kwwwwwwwwwwwk.",
+    "..kkkkkkkkkkkkk.",
+    "................",
+};
+
 /* Letters laid over the message box discs. */
 static const char *L_INFO[] = {
     "..##..",
@@ -572,6 +645,11 @@ int icons_init(void)
     ok |= add_grid(ICON_RADIO, C_RADIO, ROWS(C_RADIO), 0);
     ok |= add_grid(ICON_SPEAKER, C_SPEAKER, ROWS(C_SPEAKER), 0);
     ok |= add_grid(ICON_SPEAKER_MUTE, C_SPEAKER_MUTE, ROWS(C_SPEAKER_MUTE), 0);
+
+    ok |= add_grid(ICON_FIND, C_FIND, ROWS(C_FIND), 0);
+    ok |= add_grid(ICON_TOWN, C_TOWN, ROWS(C_TOWN), 0);
+    ok |= add_grid(ICON_STAR_SMALL, C_STAR_SMALL, ROWS(C_STAR_SMALL), 0);
+    ok |= add_grid(ICON_REPORT, C_REPORT, ROWS(C_REPORT), 0);
 
     gear_icon();
     ok |= draw_atlas_add(buf, 16, 16, &regions[ICON_SETTINGS]);
