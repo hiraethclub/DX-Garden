@@ -34,7 +34,7 @@ enum {
     CMD_ADD, CMD_RELOAD, CMD_OPEN_FOLDER, CMD_REPORT,
     CMD_TOOLBAR, CMD_STATUSBAR, CMD_SMOOTH, CMD_SCALE_AUTO, CMD_ZOOM_IN, CMD_ZOOM_OUT,
     CMD_CASCADE, CMD_TILE, CMD_SHOW_STATIONS, CMD_SHOW_PLAYER, CMD_GALLERY, CMD_ABOUT,
-    CMD_SHOW_GLOBE, CMD_AUTO_TUNE,
+    CMD_SHOW_GLOBE, CMD_AUTO_TUNE, CMD_GLOBE_FILL,
     CMD_SCALE_FIRST /* CMD_SCALE_FIRST + i is SCALES[i]; keep last */
 };
 
@@ -71,6 +71,7 @@ static struct {
     SDL_SystemCursor cursor_now;
     int text_input_on;
     int placed;
+    char os_title[600];
 } A;
 
 static void command(int cmd);
@@ -99,6 +100,7 @@ static void save_settings(void)
     config_set_int(c, "ui", "status_bar", A.show_status);
     config_set_int(c, "ui", "smooth_fonts", font_smooth());
     config_set_int(c, "player", "volume", A.volume);
+    config_set_int(c, "ui", "globe_fills", A.w_globe->maximized);
     if (data_save_config(&A.d) != 0)
         LOG("config: could not save %s", PATHS.config);
 }
@@ -348,6 +350,7 @@ static ui_menu_item view_items[] = {
     { "S&mooth Screen Fonts", NULL, CMD_SMOOTH, 0, NULL },
     { NULL, NULL, 0, MI_SEPARATOR, NULL },
     { "&Play Place Under Crosshair", NULL, CMD_AUTO_TUNE, 0, NULL },
+    { "&Globe Fills Window", NULL, CMD_GLOBE_FILL, 0, NULL },
     { NULL, NULL, 0, MI_SEPARATOR, NULL },
     { "&Load Report...", NULL, CMD_REPORT, 0, NULL },
 };
@@ -365,7 +368,7 @@ static ui_menu_item help_items[] = {
     { "&About DX Garden", NULL, CMD_ABOUT, 0, NULL },
 };
 static ui_menu menus[] = {
-    { file_items, 5 }, { station_items, 9 }, { view_items, 9 }, { window_items, 6 },
+    { file_items, 5 }, { station_items, 9 }, { view_items, 10 }, { window_items, 6 },
     { help_items, 3 },
 };
 static const char *menu_labels[] = { "&File", "&Station", "&View", "&Window", "&Help" };
@@ -392,6 +395,7 @@ static void update_menu_checks(void)
         if (SCALES[i] == A.scale_setting)
             size_items[2 + i].flags |= MI_CHECKED;
     view_items[6].flags = globeview_auto_tune() ? MI_CHECKED : 0;
+    view_items[7].flags = A.w_globe->maximized ? MI_CHECKED : 0;
     window_items[3].flags = A.w_globe->open ? MI_CHECKED : 0;
     window_items[4].flags = A.w_stations->open ? MI_CHECKED : 0;
     window_items[5].flags = A.w_player->open ? MI_CHECKED : 0;
@@ -464,6 +468,11 @@ static void command(int cmd)
     case CMD_GALLERY: ui_window_show(A.w_gallery); break;
     case CMD_SHOW_GLOBE: ui_window_show(A.w_globe); break;
     case CMD_AUTO_TUNE: globeview_set_auto_tune(!globeview_auto_tune()); break;
+    case CMD_GLOBE_FILL:
+        A.w_globe->maximized = !A.w_globe->maximized;
+        A.w_globe->minimized = 0;
+        ui_window_show(A.w_globe);
+        break;
     case CMD_ABOUT: show_dialog(A.w_about); break;
     default:
         if (cmd >= CMD_SCALE_FIRST && cmd < CMD_SCALE_FIRST + N_SCALES)
@@ -559,8 +568,9 @@ int app_init(SDL_Window *win, const char *assets, const char *data)
     A.w_gallery->min_h = 300;
     A.w_about = ui_window_new("About DX Garden", ICON_APP16, 0, 0, 400, 250,
                               UIW_DIALOG | UIW_MODAL, about_window, NULL);
-    A.w_globe = ui_window_new("Globe", ICON_GLOBE, 8, 8, 640, 480, UIW_RESIZABLE, globeview_draw,
-                              NULL);
+    A.w_globe = ui_window_new("Globe", ICON_GLOBE, 8, 8, 640, 480,
+                              UIW_RESIZABLE | UIW_BACKGROUND | UIW_NO_CLOSE, globeview_draw, NULL);
+    A.w_globe->maximized = config_get_int(&A.d.cfg, "ui", "globe_fills", 1, 0, 1);
     A.w_globe->min_w = 320;
     A.w_globe->min_h = 240;
     libview_init(&A.d, &hooks);
@@ -722,7 +732,12 @@ int app_frame(void)
         tb = ui_title_bar(0xFACE, b, b, w - 2 * b, t, ICON_APP16,
                           (SDL_GetWindowFlags(A.win) & SDL_WINDOW_INPUT_FOCUS) != 0,
                           UI_TB_MIN | UI_TB_MAX | UI_TB_CLOSE, maximized);
-        SDL_SetWindowTitle(A.win, t);
+        /* Only on a change: setting it makes Windows repaint the taskbar
+         * button. */
+        if (strcmp(t, A.os_title) != 0) {
+            snprintf(A.os_title, sizeof(A.os_title), "%s", t);
+            SDL_SetWindowTitle(A.win, t);
+        }
     }
     if (tb == UI_TB_CLOSE)
         A.quit = 1;
@@ -749,17 +764,19 @@ int app_frame(void)
         if (!A.placed) {
             /* First frame: the workspace is known now. Fit the windows to
              * it: Stations on the left, Now Playing on the right. */
-            /* The globe on the left; Now Playing and Stations on the
-             * right. */
-            int right_w = ws.w * 2 / 5, gw = ws.w - right_w - 6, ph = 250;
-            if (right_w < 300)
-                right_w = 300;
-            if (gw < 320)
-                gw = 320;
-            A.w_globe->r = (rect){ ws.x, ws.y, gw, ws.h };
-            A.w_player->r = (rect){ ws.x + ws.w - right_w, ws.y, right_w, ph };
-            A.w_stations->r = (rect){ ws.x + ws.w - right_w, ws.y + ph + 4, right_w,
-                                      ws.h - ph - 4 };
+            /* The globe fills the workspace; Now Playing and Stations
+             * float over its right-hand side. Restored, the globe is a
+             * window on the left. */
+            int right_w = ws.w * 3 / 10, ph = 250, m = 10;
+            if (right_w < 330)
+                right_w = 330;
+            if (right_w > 520)
+                right_w = 520;
+            A.w_globe->r = (rect){ ws.x, ws.y, ws.w - right_w - 2 * m, ws.h };
+            A.w_globe->restore = A.w_globe->r;
+            A.w_player->r = (rect){ ws.x + ws.w - right_w - m, ws.y + m, right_w, ph };
+            A.w_stations->r = (rect){ ws.x + ws.w - right_w - m, ws.y + m + ph + 6, right_w,
+                                      ws.h - ph - 6 - 2 * m - 60 };
             A.placed = 1;
         }
         ui_windows();

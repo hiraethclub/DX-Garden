@@ -234,6 +234,9 @@ static void flush(void)
 {
     if (!n_quads)
         return;
+    /* Something else (the globe's tile uploads) may have bound another
+     * texture since the batch began. */
+    glBindTexture(GL_TEXTURE_2D, atlas_tex);
     glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizeiptr)(sizeof(vertex) * 6 * (size_t)n_quads), verts);
     glDrawArrays(GL_TRIANGLES, 0, n_quads * 6);
     stat_calls++;

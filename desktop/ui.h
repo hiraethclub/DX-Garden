@@ -98,7 +98,10 @@ enum {
     UIW_DIALOG    = 1 << 1, /* no minimise/maximise, close only */
     UIW_MODAL     = 1 << 2, /* blocks the other windows while open */
     UIW_NO_CLOSE  = 1 << 3,
-    UIW_TOOL      = 1 << 4  /* no title bar icon */
+    UIW_TOOL      = 1 << 4, /* no title bar icon */
+    /* Stays behind the other windows; maximised, it has no frame and fills
+     * the workspace like a desktop background (the globe). */
+    UIW_BACKGROUND = 1 << 5
 };
 
 typedef struct ui_window ui_window;

@@ -1523,3 +1523,26 @@ coasting; Random Place flying to Chiang Mai.
   detail pack and the optional online layers will help there.
 - Software rendering here is slow, so real frame rates are unknown until
   tested on Windows with a real GPU.
+
+## Build 36: flicker fix, globe fills the window (2026-10-30)
+
+From the build 35 test.
+
+**Flicker while moving the globe.** New imagery tiles were uploaded while
+the interface was being drawn. Uploading binds the tile's texture, and
+interface drawing still waiting in the batch then went to the GPU with the
+tile bound instead of the interface's atlas, so whole windows came out
+black or tile-coloured for a frame. It showed in any window drawn after
+the globe (any window clicked since start). Reproduced here: with build 35
+code and the Stations window raised, frames during a zoom showed the
+window black and smeared; with the fix, the window's pixels are identical
+across those frames. Two changes: uploads happen in the globe's own pass
+(`earth_update()` in the underlay), and the interface binds its atlas on
+every batch, so nothing else can disturb it. The OS window title is also
+only set when it changes.
+
+**Layout.** The globe now fills the workspace with no frame, like a desktop
+background (a new `UIW_BACKGROUND` window kind: kept behind the others,
+frameless when maximised), with Now Playing and Stations floating over its
+right side. View, Globe Fills Window turns it back into an ordinary window
+on the left; the choice is saved.

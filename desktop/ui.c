@@ -389,9 +389,16 @@ static void raise_window(ui_window *w)
             break;
     if (i == UI.n_windows)
         return;
-    for (j = i; j < UI.n_windows - 1; j++)
-        UI.windows[j] = UI.windows[j + 1];
-    UI.windows[UI.n_windows - 1] = w;
+    if (w->flags & UIW_BACKGROUND) {
+        /* Activated, but kept at the back. */
+        for (j = i; j > 0; j--)
+            UI.windows[j] = UI.windows[j - 1];
+        UI.windows[0] = w;
+    } else {
+        for (j = i; j < UI.n_windows - 1; j++)
+            UI.windows[j] = UI.windows[j + 1];
+        UI.windows[UI.n_windows - 1] = w;
+    }
     if (UI.active_window != w)
         UI.focus = 0;
     UI.active_window = w;
@@ -581,6 +588,19 @@ static void draw_window(ui_window *w, int has_input)
     rect r = outer_rect(w);
     int b = w->minimized ? 3 : BORDER(w), active = UI.active_window == w, tb;
     unsigned buttons = UI_TB_CLOSE;
+
+    if ((w->flags & UIW_BACKGROUND) && w->maximized) {
+        /* No frame: the client is the whole workspace. */
+        UI.scope = w->id;
+        UI.scope_has_input = has_input;
+        UI.scope_has_focus = active;
+        if (w->draw) {
+            draw_clip_push(r.x, r.y, r.w, r.h);
+            w->draw(w, r, w->ud);
+            draw_clip_pop();
+        }
+        return;
+    }
 
     if (w->flags & UIW_NO_CLOSE)
         buttons = 0;

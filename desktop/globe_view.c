@@ -387,8 +387,6 @@ void globeview_draw(ui_window *w, rect c, void *ud)
         if (t >= 0 && auto_tune && !dragging)
             tune(t);
     }
-    earth_update();
-
     draw_underlay(g.x, g.y, g.w, g.h, underlay, NULL);
     crosshair(g.x + g.w / 2, g.y + g.h / 2,
               auto_tune && candidate >= 0 && candidate != playing_place()
@@ -406,5 +404,8 @@ void globeview_draw(ui_window *w, rect c, void *ud)
 static void underlay(int w, int h, void *ud)
 {
     (void)ud;
+    /* Uploads happen here, in the globe's own pass, never in the middle
+     * of the interface's drawing (they change the bound texture). */
+    earth_update();
     earth_render(&cam, w, h, draw_scale(), candidate, playing_place());
 }
